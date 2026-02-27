@@ -265,16 +265,18 @@
         <div class="tech-note">
             <strong>What this does:</strong>
             <div class="features-grid">
-                <div class="feature-item"><span class="feature-check">✓</span> Converts PNG/GIF/WebP to baseline JPEG</div>
-                <div class="feature-item"><span class="feature-check">✓</span> Fixes SVG covers for e-readers</div>
-                <div class="feature-item"><span class="feature-check">✓</span> Scales large images to fit screen</div>
-                <div class="feature-item"><span class="feature-check">✓</span> Light Novel Mode: rotates & splits wide images</div>
-                <div class="feature-item"><span class="feature-check">✓</span> Batch processing with ZIP download</div>
-                <div class="feature-item"><span class="feature-check">✓</span> CrossPoint / e-reader compatible</div>
+                <div class="feature-item"><span class="feature-check">✓</span> Converts PNG/GIF/WebP/BMP → baseline JPEG (1-95% quality)</div>
+                <div class="feature-item"><span class="feature-check">✓</span> Scales images to fit e-reader screen (480×800 default)</div>
+                <div class="feature-item"><span class="feature-check">✓</span> Light Novel Mode: rotates 90° CW + splits wide images with overlap</div>
+                <div class="feature-item"><span class="feature-check">✓</span> Grayscale conversion for e-ink displays</div>
+                <div class="feature-item"><span class="feature-check">✓</span> Fixes SVG covers and SVG-wrapped images</div>
+                <div class="feature-item"><span class="feature-check">✓</span> Repairs EPUB metadata (cover meta, manifest, NCX sync)</div>
+                <div class="feature-item"><span class="feature-check">✓</span> Batch processing multiple EPUBs → ZIP download</div>
+                <div class="feature-item"><span class="feature-check">✓</span> Runs 100% in browser — no upload to server</div>
             </div>
         </div>
 
-        <footer>Made by <a href="#">Megabit & pablohc</a> • v2.2.0 • Runs entirely in your browser</footer>
+        <footer>Made by <a href="#">Megabit & pablohc</a> • v2.2.2 • Runs entirely in your browser</footer>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -802,7 +804,8 @@
                             splitImages[origName].push({ 
                                 path: partPath, 
                                 imgName: partName,
-                                id: baseName.split('/').pop() + part.suffix
+                                id: baseName.split('/').pop() + part.suffix,
+                                suffix: part.suffix
                             });
                             splitCount++;
                             conv++;
@@ -841,7 +844,9 @@
                         let result = '';
                         for (let i = 0; i < parts.length; i++) {
                             if (i > 0) result += '\n';
-                            const newBlock = match.replace(origName, parts[i].imgName).replace(newName, parts[i].imgName);
+                            let newBlock = match.replace(origName, parts[i].imgName).replace(newName, parts[i].imgName);
+                            // Update id attribute to make it unique for each part
+                            newBlock = newBlock.replace(/\bid="([^"]+)"/, (m, id) => `id="${id}${parts[i].suffix || '_part' + (i+1)}"`);
                             result += newBlock;
                         }
                         return result;
@@ -856,7 +861,10 @@
                         for (let i = 0; i < parts.length; i++) {
                             if (i > 0) result += '\n';
                             const partSrc = src.replace(origName, parts[i].imgName).replace(newName, parts[i].imgName);
-                            result += `${before}${partSrc}${after}`;
+                            // Update id attribute in before or after to make it unique
+                            let partBefore = before.replace(/\bid="([^"]+)"/, (m, id) => `id="${id}${parts[i].suffix || '_part' + (i+1)}"`);
+                            let partAfter = after.replace(/\bid="([^"]+)"/, (m, id) => `id="${id}${parts[i].suffix || '_part' + (i+1)}"`);
+                            result += `${partBefore}${partSrc}${partAfter}`;
                         }
                         return result;
                     });
@@ -909,6 +917,29 @@
                 out.file(opfPath, t, { compression: 'DEFLATE', createFolders: false });
             }
             
+            // Extract main identifier from OPF for NCX sync
+            let mainIdentifier = null;
+            if (opfContent) {
+                // Find unique-identifier attribute in <package>
+                const uniqueIdMatch = opfContent.match(/<package[^>]*unique-identifier=["']([^"']+)["']/i);
+                if (uniqueIdMatch) {
+                    const uniqueIdName = uniqueIdMatch[1];
+                    // Find the dc:identifier with that id
+                    const idRegex = new RegExp(`<dc:identifier[^>]*id=["']${uniqueIdName}["'][^>]*>([^<]+)</dc:identifier>`, 'i');
+                    const idMatch = opfContent.match(idRegex);
+                    if (idMatch) {
+                        mainIdentifier = idMatch[1].trim();
+                    }
+                }
+                // Fallback: use first dc:identifier
+                if (!mainIdentifier) {
+                    const firstIdMatch = opfContent.match(/<dc:identifier[^>]*>([^<]+)</i);
+                    if (firstIdMatch) {
+                        mainIdentifier = firstIdMatch[1].trim();
+                    }
+                }
+            }
+            
             // Copy remaining files (skip mimetype - already written first)
             for (const [path, fileObj] of entries) {
                 if (fileObj.dir || path === 'mimetype') continue;
@@ -916,10 +947,21 @@
                 if (low.match(/\.(png|gif|webp|bmp|jpg|jpeg)$/) || low.match(/\.(xhtml|html|htm)$/) || low.endsWith('.opf')) continue;
                 
                 let data = await fileObj.async('arraybuffer');
-                if (low.endsWith('.css') || low.endsWith('.ncx')) {
+                if (low.endsWith('.css')) {
                     let t = new TextDecoder().decode(data);
                     for (const [o, n] of Object.entries(renamed)) {
                         t = t.split(o.split('/').pop()).join(n.split('/').pop());
+                    }
+                    data = new TextEncoder().encode(t);
+                } else if (low.endsWith('.ncx')) {
+                    let t = new TextDecoder().decode(data);
+                    for (const [o, n] of Object.entries(renamed)) {
+                        t = t.split(o.split('/').pop()).join(n.split('/').pop());
+                    }
+                    // Sync NCX identifier with OPF
+                    if (mainIdentifier) {
+                        t = t.replace(/<meta\s+name=["']dtb:uid["']\s+content=["'][^"']*["']\s*\/?>/gi, 
+                            `<meta name="dtb:uid" content="${mainIdentifier}"/>`);
                     }
                     data = new TextEncoder().encode(t);
                 }
@@ -1088,7 +1130,8 @@
                             splitImages[origName].push({ 
                                 path: partPath, 
                                 imgName: partName,
-                                id: baseName.split('/').pop() + part.suffix
+                                id: baseName.split('/').pop() + part.suffix,
+                                suffix: part.suffix
                             });
                             splitCount++;
                             conv++;
@@ -1133,9 +1176,11 @@
                         let result = '';
                         for (let i = 0; i < parts.length; i++) {
                             if (i > 0) result += '\n';
-                            const newBlock = match
+                            let newBlock = match
                                 .replace(origName, parts[i].imgName)
                                 .replace(newName, parts[i].imgName);
+                            // Update id attribute to make it unique for each part
+                            newBlock = newBlock.replace(/\bid="([^"]+)"/, (m, id) => `id="${id}${parts[i].suffix || '_part' + (i+1)}"`);
                             result += newBlock;
                         }
                         return result;
@@ -1152,7 +1197,10 @@
                         for (let i = 0; i < parts.length; i++) {
                             if (i > 0) result += '\n';
                             const partSrc = src.replace(origName, parts[i].imgName).replace(newName, parts[i].imgName);
-                            result += `${before}${partSrc}${after}`;
+                            // Update id attribute in before or after to make it unique
+                            let partBefore = before.replace(/\bid="([^"]+)"/, (m, id) => `id="${id}${parts[i].suffix || '_part' + (i+1)}"`);
+                            let partAfter = after.replace(/\bid="([^"]+)"/, (m, id) => `id="${id}${parts[i].suffix || '_part' + (i+1)}"`);
+                            result += `${partBefore}${partSrc}${partAfter}`;
                         }
                         return result;
                     });
@@ -1211,6 +1259,29 @@
                 
                 out.file(opfPath, t, { compression: 'DEFLATE', createFolders: false });
             }
+            
+            // Extract main identifier from OPF for NCX sync
+            let mainIdentifier = null;
+            if (opfContent) {
+                // Find unique-identifier attribute in <package>
+                const uniqueIdMatch = opfContent.match(/<package[^>]*unique-identifier=["']([^"']+)["']/i);
+                if (uniqueIdMatch) {
+                    const uniqueIdName = uniqueIdMatch[1];
+                    // Find the dc:identifier with that id
+                    const idRegex = new RegExp(`<dc:identifier[^>]*id=["']${uniqueIdName}["'][^>]*>([^<]+)</dc:identifier>`, 'i');
+                    const idMatch = opfContent.match(idRegex);
+                    if (idMatch) {
+                        mainIdentifier = idMatch[1].trim();
+                    }
+                }
+                // Fallback: use first dc:identifier
+                if (!mainIdentifier) {
+                    const firstIdMatch = opfContent.match(/<dc:identifier[^>]*>([^<]+)</i);
+                    if (firstIdMatch) {
+                        mainIdentifier = firstIdMatch[1].trim();
+                    }
+                }
+            }
 
             // Fourth pass: copy remaining files (skip mimetype - already written first)
             progress(80, 'Copying remaining files...');
@@ -1227,10 +1298,21 @@
                 
                 let data = await file.async('arraybuffer');
                 
-                if (low.endsWith('.css') || low.endsWith('.ncx')) {
+                if (low.endsWith('.css')) {
                     let t = new TextDecoder().decode(data);
                     for (const [o, n] of Object.entries(renamed)) {
                         t = t.split(o.split('/').pop()).join(n.split('/').pop());
+                    }
+                    data = new TextEncoder().encode(t);
+                } else if (low.endsWith('.ncx')) {
+                    let t = new TextDecoder().decode(data);
+                    for (const [o, n] of Object.entries(renamed)) {
+                        t = t.split(o.split('/').pop()).join(n.split('/').pop());
+                    }
+                    // Sync NCX identifier with OPF
+                    if (mainIdentifier) {
+                        t = t.replace(/<meta\s+name=["']dtb:uid["']\s+content=["'][^"']*["']\s*\/?>/gi, 
+                            `<meta name="dtb:uid" content="${mainIdentifier}"/>`);
                     }
                     data = new TextEncoder().encode(t);
                 }
