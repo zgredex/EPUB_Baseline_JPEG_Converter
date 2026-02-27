@@ -554,49 +554,44 @@
 
         function ensureCoverMeta(o) {
             // Find cover image ID from manifest
+            // Handles namespaces and any attribute order.
             let coverId = null, m;
-            
-            // Try 1: properties="cover-image"
-            if (m = o.match(/<item[^>]+id="([^"]+)"[^>]+properties="[^"]*cover-image[^"]*"/)) coverId = m[1];
-            if (!coverId && (m = o.match(/<item[^>]+properties="[^"]*cover-image[^"]*"[^>]+id="([^"]+)"/))) coverId = m[1];
-            
-            // Try 2: href contains "cover" and is an image
-            if (!coverId && (m = o.match(/<item[^>]+id="([^"]+)"[^>]+href="[^"]*cover[^"]*"[^>]*media-type="image\//i))) coverId = m[1];
-            if (!coverId && (m = o.match(/<item[^>]+href="[^"]*cover[^"]*"[^>]+id="([^"]+)"[^>]*media-type="image\//i))) coverId = m[1];
-            
-            // Try 3: id contains "cover" and is an image
-            if (!coverId && (m = o.match(/<item[^>]+id="([^"]*cover[^"]*)"[^>]+media-type="image\//i))) coverId = m[1];
-            if (!coverId && (m = o.match(/<item[^>]+media-type="image\/[^"]*"[^>]+id="([^"]*cover[^"]*)"[^>]*/i))) coverId = m[1];
-            
+
+            // Try 1: properties="cover-image" (with namespace support)
+            if (!coverId && (m = o.match(/<\w+:?item[^>]+id="([^"]+)"[^>]+properties="[^"]*cover-image[^"]*"/i))) coverId = m[1];
+            if (!coverId && (m = o.match(/<\w+:?item[^>]+properties="[^"]*cover-image[^"]*"[^>]+id="([^"]+)"/i))) coverId = m[1];
+
+            // Try 2: href contains "cover" and is an image (any attribute order)
+            if (!coverId && (m = o.match(/<\w+:?item[^>]*id="([^"]+)"[^>]*href="[^"]*cover[^"]*"[^>]*media-type="image\//i))) coverId = m[1];
+            if (!coverId && (m = o.match(/<\w+:?item[^>]*href="[^"]*cover[^"]*"[^>]*id="([^"]+)"[^>]*media-type="image\//i))) coverId = m[1];
+
+            // Try 3: id contains "cover" and is an image (any attribute order with namespace)
+            if (!coverId && (m = o.match(/<\w+:?item[^>]*id="([^"]*cover[^"]*)"[^>]*media-type="image\//i))) coverId = m[1];
+            if (!coverId && (m = o.match(/<\w+:?item[^>]*media-type="image\/[^"]*"[^>]*id="([^"]*cover[^"]*)"/i))) coverId = m[1];
+
             if (!coverId) return { o, fixed: false };
-            
-            // Check if cover meta exists - support both attribute orders:
-            // <meta name="cover" content="..."> OR <meta content="..." name="cover">
-            const metaMatch = o.match(/<meta\s+name=["']cover["']\s+content=["']([^"']+)["']/) || 
-                              o.match(/<meta\s+content=["']([^"']+)["']\s+name=["']cover["']/);
+
+            // Check if cover meta exists (handle namespaces like opf:meta)
+            const metaMatch = o.match(/<\w+:?meta\s+name=["']cover["']\s+content=["']([^"']+)["']/i) ||
+                              o.match(/<\w+:?meta\s+content=["']([^"']+)["']\s+name=["']cover["']/i);
+
             if (metaMatch) {
                 const currentValue = metaMatch[1];
-                // If value contains path separators, it's wrong - should be ID only
-                if (currentValue.includes('/')) {
-                    // Replace with correct ID - handle both orders
-                    o = o.replace(/<meta\s+name=["']cover["']\s+content=["'][^"']+["']\s*\/?>/g, `<meta name="cover" content="${coverId}" />`);
-                    o = o.replace(/<meta\s+content=["'][^"']+["']\s+name=["']cover["']\s*\/?>/g, `<meta name="cover" content="${coverId}" />`);
+                if (currentValue.includes('/') || currentValue !== coverId) {
+                    // Fix incorrect cover meta (handle namespaces)
+                    o = o.replace(/<\w+:?meta\s+name=["']cover["']\s+content=["'][^"']+["']\s*\/?>/gi, `<meta name="cover" content="${coverId}" />`);
+                    o = o.replace(/<\w+:?meta\s+content=["'][^"']+["']\s+name=["']cover["']\s*\/?>/gi, `<meta name="cover" content="${coverId}" />`);
                     return { o, fixed: true };
                 }
-                // If value doesn't match the cover ID we found, fix it
-                if (currentValue !== coverId) {
-                    o = o.replace(/<meta\s+name=["']cover["']\s+content=["'][^"']+["']\s*\/?>/g, `<meta name="cover" content="${coverId}" />`);
-                    o = o.replace(/<meta\s+content=["'][^"']+["']\s+name=["']cover["']\s*\/?>/g, `<meta name="cover" content="${coverId}" />`);
-                    return { o, fixed: true };
-                }
-                return { o, fixed: false }; // Already has valid cover meta
+                return { o, fixed: false };
             }
-            
-            // Add missing cover meta (only replace first occurrence)
+
+            // Add missing cover meta
             const idx = o.indexOf('</metadata>');
             if (idx !== -1) {
                 return { o: o.substring(0, idx) + `    <meta name="cover" content="${coverId}"/>\n  </metadata>` + o.substring(idx + 11), fixed: true };
             }
+
             return { o, fixed: false };
         }
 
