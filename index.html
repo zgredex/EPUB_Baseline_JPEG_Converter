@@ -190,6 +190,24 @@
         .batch-item-status.processing { color: var(--warning); }
         .batch-item-icon { width: 20px; text-align: center; }
         @media (max-width: 600px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } .features-grid { grid-template-columns: 1fr; } }
+        
+        /* Advanced Mode Toggle */
+        .mode-toggle { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 16px; padding: 12px 16px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; }
+        .mode-toggle-label { font-size: 0.9rem; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 10px; user-select: none; }
+        .mode-toggle-label:hover { color: var(--text-primary); }
+        .mode-toggle .toggle-switch { margin: 0; }
+        
+        /* Simple mode: hide advanced elements */
+        body:not(.advanced-mode) .stats-grid { display: none; }
+        body:not(.advanced-mode) #validation-section { display: none !important; }
+        body:not(.advanced-mode) #quality-section { display: none !important; }
+        body:not(.advanced-mode) #image-picker { display: none !important; }
+        body:not(.advanced-mode) #log-section { display: none !important; }
+        body:not(.advanced-mode) .file-header { justify-content: center; }
+        body:not(.advanced-mode) .file-icon { display: none; }
+        
+        /* Simple mode: simplified complete section */
+        body:not(.advanced-mode) .complete-subtitle { display: none; }
     </style>
 </head>
 <body>
@@ -208,6 +226,16 @@
             <p class="drop-zone-text">Drop your EPUB files here</p>
             <p class="drop-zone-hint">or click to browse (multiple files supported)</p>
             <input type="file" id="file-input" accept=".epub" multiple>
+        </div>
+
+        <div class="mode-toggle">
+            <label class="mode-toggle-label">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="advanced-mode-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span>⚙️ Advanced Mode</span>
+            </label>
         </div>
 
         <div class="batch-info" id="batch-info">
@@ -328,7 +356,7 @@
             </div>
         </div>
 
-        <footer>Made by <a href="#">Megabit & pablohc</a> • v2.5.0 • Runs entirely in your browser</footer>
+        <footer>Made by <a href="#">Megabit & pablohc</a> • v2.6.0 • Runs entirely in your browser</footer>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -349,10 +377,49 @@
         const imagePicker = $('image-picker'), imageGrid = $('image-grid');
         const pickerCount = $('picker-count'), splitCount = $('split-count');
         const selectLandscapeBtn = $('select-landscape-btn'), selectAllBtn = $('select-all-btn'), selectNoneBtn = $('select-none-btn');
+        const advancedModeToggle = $('advanced-mode-toggle');
 
         let currentFile = null, convertedBlob = null, jpegQuality = 85, currentZip = null;
         let batchFiles = [], batchResults = [], isBatchMode = false;
         let enableGrayscale = true;    // toggle for grayscale conversion (default ON)
+        let advancedMode = false;      // Advanced Mode off by default
+        
+        // Advanced Mode toggle handler
+        advancedModeToggle.onchange = async () => {
+            advancedMode = advancedModeToggle.checked;
+            document.body.classList.toggle('advanced-mode', advancedMode);
+            
+            // If a file is already loaded, update UI accordingly
+            if (currentZip && !isBatchMode) {
+                if (advancedMode) {
+                    // Switching to advanced: show quality section, run validation, load thumbnails
+                    qualitySection.classList.add('visible');
+                    
+                    // Run validation and show results
+                    validationSection.classList.remove('visible', 'success', 'warning', 'error');
+                    validationIcon.textContent = '🔍'; 
+                    validationTitle.textContent = 'Validating EPUB...';
+                    validationIssues.innerHTML = ''; 
+                    validationSection.classList.add('visible');
+                    
+                    const result = await validateEpub(currentZip, false);
+                    statTotal.textContent = result.imgCount;
+                    showValidation(result, false);
+                    
+                    await loadImageThumbnails(currentZip);
+                } else {
+                    // Switching to simple: hide everything, clear selections
+                    qualitySection.classList.remove('visible');
+                    validationSection.classList.remove('visible');
+                    imagePicker.classList.remove('visible');
+                    selectedForSplit.clear();
+                }
+            } else if (isBatchMode && advancedMode) {
+                qualitySection.classList.add('visible');
+            } else if (isBatchMode && !advancedMode) {
+                qualitySection.classList.remove('visible');
+            }
+        };
         
         // Image picker state
         let selectedForSplit = new Set();  // Set of image paths selected for Rotate & Split
@@ -717,7 +784,7 @@
             logContainer.scrollTop = logContainer.scrollHeight;
         }
         
-        function logImage(name, origW, origH, origFormat, origSize, newW, newH, newSize, wasSplit = false, splitCount = 0) {
+        function logImage(name, origW, origH, origFormat, origSize, newW, newH, newSize, wasSplit = false, splitCount = 0, partsInfo = null) {
             const saved = origSize - newSize;
             const savedPct = ((saved / origSize) * 100).toFixed(0);
             const dims = `${origW}×${origH}`;
@@ -726,32 +793,49 @@
             if (wasSplit) {
                 conversionStats.splits++;
                 conversionStats.splitParts += splitCount;
-                log(`<strong>${name}</strong> <span class="log-detail">(${dims} ${origFormat.toUpperCase()}, ${formatBytes(origSize)}) → split into ${splitCount} parts</span>`, '', 'SPLIT');
+                if (advancedMode) {
+                    // Build parts detail string
+                    let partsDetail = '';
+                    if (partsInfo && partsInfo.length > 0) {
+                        partsDetail = partsInfo.map(p => 
+                            `${p.name} (${p.width}×${p.height}, ${formatBytes(p.size)})`
+                        ).join(', ');
+                    }
+                    const savedInfo = saved > 0 ? `, <span style="color:#4ade80">-${savedPct}%</span>` : '';
+                    log(`<strong>${name}</strong> <span class="log-detail">(${dims} ${origFormat.toUpperCase()}, ${formatBytes(origSize)}) → ${splitCount} parts${savedInfo}</span>`, '', 'SPLIT');
+                    if (partsDetail) {
+                        log(`<span class="log-detail" style="margin-left: 20px;">↳ ${partsDetail}</span>`, '', '');
+                    }
+                }
             } else {
                 conversionStats.images++;
-                const detail = saved > 0 
-                    ? `<span class="log-detail">(${dims} → ${newDims}, ${formatBytes(origSize)} → ${formatBytes(newSize)}, <span style="color:#4ade80">-${savedPct}%</span>)</span>`
-                    : `<span class="log-detail">(${dims} → ${newDims}, ${formatBytes(newSize)})</span>`;
-                log(`<strong>${name}</strong> ${detail}`, '', 'CONVERT');
+                if (advancedMode) {
+                    const detail = saved > 0 
+                        ? `<span class="log-detail">(${dims} → ${newDims}, ${formatBytes(origSize)} → ${formatBytes(newSize)}, <span style="color:#4ade80">-${savedPct}%</span>)</span>`
+                        : `<span class="log-detail">(${dims} → ${newDims}, ${formatBytes(newSize)})</span>`;
+                    log(`<strong>${name}</strong> ${detail}`, '', 'CONVERT');
+                }
             }
         }
         
         function logFix(type, detail) {
             conversionStats.fixes++;
-            log(`${type}: <span class="log-detail">${detail}</span>`, 'success', 'FIX');
+            if (advancedMode) log(`${type}: <span class="log-detail">${detail}</span>`, 'success', 'FIX');
         }
         
         function logSkip(name, reason) {
             conversionStats.skipped++;
-            log(`${name} <span class="log-detail">(${reason})</span>`, '', 'SKIP');
+            if (advancedMode) log(`${name} <span class="log-detail">(${reason})</span>`, '', 'SKIP');
         }
         
         function logError(message) {
             conversionStats.errors++;
-            log(message, 'error', 'ERROR');
+            if (advancedMode) log(message, 'error', 'ERROR');
         }
         
         function logSummary(originalSize, newSize, timeElapsed) {
+            if (!advancedMode) return;
+            
             const saved = originalSize - newSize;
             const savedPct = ((saved / originalSize) * 100).toFixed(1);
             const totalImages = conversionStats.images + conversionStats.splits;
@@ -836,7 +920,9 @@
                 imageMetadata = {};
                 imageGrid.innerHTML = '';
                 updateBatchList();
-                qualitySection.classList.add('visible');
+                if (advancedMode) {
+                    qualitySection.classList.add('visible');
+                }
                 convertBtn.disabled = false;
             }
         }
@@ -844,31 +930,44 @@
         async function handleFile(f) {
             currentFile = f; fileName.textContent = f.name; fileSize.textContent = formatBytes(f.size);
             fileInfo.classList.add('visible'); 
-            validationSection.classList.remove('visible', 'success', 'warning', 'error');
-            validationIcon.textContent = '🔍'; validationTitle.textContent = 'Validating EPUB...';
-            validationIssues.innerHTML = ''; validationSection.classList.add('visible');
             imagePicker.classList.remove('visible');
-            
             completeSection.classList.remove('visible'); 
             statTotal.textContent = statConverted.textContent = statSize.textContent = statSaved.textContent = '-'; 
             clearLog();
             
             try {
                 currentZip = await JSZip.loadAsync(f);
-                const result = await validateEpub(currentZip, false);
-                statTotal.textContent = result.imgCount;
-                showValidation(result, false);
-                qualitySection.classList.add('visible');
                 
-                // Load image thumbnails for Rotate & Split selection
-                await loadImageThumbnails(currentZip);
+                if (advancedMode) {
+                    // Advanced mode: show validation, quality settings, image picker
+                    validationSection.classList.remove('visible', 'success', 'warning', 'error');
+                    validationIcon.textContent = '🔍'; validationTitle.textContent = 'Validating EPUB...';
+                    validationIssues.innerHTML = ''; validationSection.classList.add('visible');
+                    
+                    const result = await validateEpub(currentZip, false);
+                    statTotal.textContent = result.imgCount;
+                    showValidation(result, false);
+                    qualitySection.classList.add('visible');
+                    
+                    // Load image thumbnails for Rotate & Split selection
+                    await loadImageThumbnails(currentZip);
+                } else {
+                    // Simple mode: just validate silently, use defaults
+                    validationSection.classList.remove('visible');
+                    qualitySection.classList.remove('visible');
+                    await validateEpub(currentZip, false); // validate but don't show
+                }
                 
                 convertBtn.disabled = false;
             } catch (e) {
-                validationSection.classList.add('error');
-                validationIcon.textContent = '❌';
-                validationTitle.textContent = 'Invalid EPUB file';
-                validationIssues.innerHTML = '<div class="validation-issue error"><span>✗</span> ' + e.message + '</div>';
+                if (advancedMode) {
+                    validationSection.classList.add('error');
+                    validationIcon.textContent = '❌';
+                    validationTitle.textContent = 'Invalid EPUB file';
+                    validationIssues.innerHTML = '<div class="validation-issue error"><span>✗</span> ' + e.message + '</div>';
+                } else {
+                    alert('Invalid EPUB file: ' + e.message);
+                }
                 convertBtn.disabled = true;
             }
         }
@@ -1163,14 +1262,15 @@
                         out.file(newPath, parts[0].data, { compression: 'DEFLATE', createFolders: false });
                         conv++;
                     } else {
-                        const origName = path.split('/').pop();
-                        splitImages[origName] = [];
+                        // Use full path as key to avoid collisions with same-named files in different folders
+                        const splitKey = path;
+                        splitImages[splitKey] = [];
                         
                         for (const part of parts) {
                             const partName = baseName.split('/').pop() + part.suffix + newExt;
                             const partPath = (path.includes('/') ? path.substring(0, path.lastIndexOf('/') + 1) : '') + partName;
                             out.file(partPath, part.data, { compression: 'DEFLATE', createFolders: false });
-                            splitImages[origName].push({ 
+                            splitImages[splitKey].push({ 
                                 path: partPath, 
                                 imgName: partName,
                                 id: baseName.split('/').pop() + part.suffix,
@@ -1203,7 +1303,9 @@
                     t = t.split(o.split('/').pop()).join(n.split('/').pop());
                 }
                 
-                for (const [origName, parts] of Object.entries(splitImages)) {
+                // Update XHTML references for split images
+                for (const [splitKey, parts] of Object.entries(splitImages)) {
+                    const origName = splitKey.split('/').pop();
                     const newName = origName.replace(/\.(png|gif|webp|bmp|jpeg)$/i, '.jpg');
                     const blockRegex = new RegExp(
                         `(<(?:p|div)[^>]*>\\s*<span>\\s*<img[^>]*src=["'][^"']*(?:${origName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|${newName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})[^>]*/>\\s*</span>\\s*</(?:p|div)>)`,
@@ -1255,7 +1357,9 @@
                 // Calculate OPF directory for relative paths
                 const opfDir = opfPath.includes('/') ? opfPath.substring(0, opfPath.lastIndexOf('/')) : '';
                 
-                for (const [origName, parts] of Object.entries(splitImages)) {
+                // Update OPF manifest for split images
+                for (const [splitKey, parts] of Object.entries(splitImages)) {
+                    const origName = splitKey.split('/').pop();
                     const origBaseName = origName.replace(/\.[^.]+$/, '');
                     const origImgRegex = new RegExp(`(href=["'][^"']*/?)(${origBaseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\.(?:jpg|jpeg|png|gif|webp|bmp)(["'])`, 'gi');
                     t = t.replace(origImgRegex, `$1${origBaseName}_part1.jpg$3`);
@@ -1346,13 +1450,14 @@
                 // Batch processing
                 convertBtn.disabled = true;
                 progressSection.classList.add('visible');
-                logSection.classList.add('visible');
-                clearLog();
+                if (advancedMode) {
+                    logSection.classList.add('visible');
+                    clearLog();
+                    log(`Batch conversion: <strong>${batchFiles.length} files</strong>`, '', 'INFO');
+                    log(`Quality: ${jpegQuality}% | Rotate & Split: ${selectedForSplit.size} images | Grayscale: ${enableGrayscale ? 'ON' : 'OFF'}`, '', 'INFO');
+                }
                 
                 const results = [];
-                log(`Batch conversion: <strong>${batchFiles.length} files</strong>`, '', 'INFO');
-                log(`Quality: ${jpegQuality}% | Rotate & Split: ${selectedForSplit.size} images | Grayscale: ${enableGrayscale ? 'ON' : 'OFF'}`, '', 'INFO');
-                
                 let totalOriginalSize = 0;
                 let totalNewSize = 0;
                 
@@ -1362,7 +1467,7 @@
                     updateBatchList();
                     
                     try {
-                        log(`<strong>${file.name}</strong> <span class="log-detail">(${formatBytes(file.size)})</span>`, '', 'CONVERT');
+                        if (advancedMode) log(`<strong>${file.name}</strong> <span class="log-detail">(${formatBytes(file.size)})</span>`, '', 'CONVERT');
                         progress((i / batchFiles.length) * 100, `Converting ${file.name}...`);
                         
                         const blob = await convertSingleFile(file, (p) => {
@@ -1378,15 +1483,17 @@
                         results.push({ name: file.name, blob, success: true, originalSize: file.size });
                         batchResults[i] = 'done';
                         
-                        if (savedBytes > 0) {
-                            log(`✓ ${file.name}: <span class="log-detail">${formatBytes(file.size)} → ${formatBytes(blob.size)} (<span style="color:#4ade80">-${savedPercent}%</span>)</span>`, 'success', 'DONE');
-                        } else {
-                            log(`✓ ${file.name}: <span class="log-detail">${formatBytes(file.size)} → ${formatBytes(blob.size)} (+${formatBytes(-savedBytes)})</span>`, 'warning', 'DONE');
+                        if (advancedMode) {
+                            if (savedBytes > 0) {
+                                log(`✓ ${file.name}: <span class="log-detail">${formatBytes(file.size)} → ${formatBytes(blob.size)} (<span style="color:#4ade80">-${savedPercent}%</span>)</span>`, 'success', 'DONE');
+                            } else {
+                                log(`✓ ${file.name}: <span class="log-detail">${formatBytes(file.size)} → ${formatBytes(blob.size)} (+${formatBytes(-savedBytes)})</span>`, 'warning', 'DONE');
+                            }
                         }
                     } catch (e) {
                         results.push({ name: file.name, error: e.message, success: false });
                         batchResults[i] = 'error';
-                        log(`${file.name}: ${e.message}`, 'error', 'ERROR');
+                        if (advancedMode) log(`${file.name}: ${e.message}`, 'error', 'ERROR');
                     }
                     updateBatchList();
                 }
@@ -1407,37 +1514,39 @@
                 const totalSavedPercent = totalOriginalSize > 0 ? ((totalSaved / totalOriginalSize) * 100).toFixed(1) : 0;
                 const batchTimeElapsed = (Date.now() - logStartTime) / 1000;
                 
-                // Update stat boxes for batch
-                fileInfo.classList.add('visible');
-                fileName.textContent = `${batchFiles.length} files`;
-                fileSize.textContent = formatBytes(totalOriginalSize);
-                statTotal.textContent = results.filter(r => r.success).length;
-                statConverted.textContent = results.length;
-                statSize.textContent = formatBytes(totalNewSize);
-                if (totalSaved > 0) {
-                    statSaved.textContent = `${formatBytes(totalSaved)} (${totalSavedPercent}%)`;
-                } else {
-                    statSaved.textContent = `+${formatBytes(-totalSaved)}`;
-                }
+                // Update stat boxes for batch (only in advanced mode)
+                if (advancedMode) {
+                    fileInfo.classList.add('visible');
+                    fileName.textContent = `${batchFiles.length} files`;
+                    fileSize.textContent = formatBytes(totalOriginalSize);
+                    statTotal.textContent = results.filter(r => r.success).length;
+                    statConverted.textContent = results.length;
+                    statSize.textContent = formatBytes(totalNewSize);
+                    if (totalSaved > 0) {
+                        statSaved.textContent = `${formatBytes(totalSaved)} (${totalSavedPercent}%)`;
+                    } else {
+                        statSaved.textContent = `+${formatBytes(-totalSaved)}`;
+                    }
                 
-                // Batch summary
-                const successCount = results.filter(r => r.success).length;
-                const failCount = results.length - successCount;
-                const summaryHtml = `
-                    <div class="log-summary">
-                        <div class="log-summary-title">📊 Batch Summary</div>
-                        <table class="log-summary-table">
-                            <tr><td>Files processed</td><td class="highlight">${successCount}/${results.length}</td></tr>
-                            ${failCount > 0 ? `<tr><td>Failed</td><td style="color:#f87171">${failCount}</td></tr>` : ''}
-                            <tr><td>Total original size</td><td>${formatBytes(totalOriginalSize)}</td></tr>
-                            <tr><td>Total new size</td><td>${formatBytes(totalNewSize)}</td></tr>
-                            <tr><td>Total saved</td><td class="${totalSaved > 0 ? 'saved' : 'increased'}">${totalSaved > 0 ? formatBytes(totalSaved) + ' (' + totalSavedPercent + '%)' : '+' + formatBytes(-totalSaved)}</td></tr>
-                            <tr><td>Time</td><td>${batchTimeElapsed.toFixed(1)}s</td></tr>
-                        </table>
-                    </div>
-                `;
-                logContainer.insertAdjacentHTML('beforeend', summaryHtml);
-                logContainer.scrollTop = logContainer.scrollHeight;
+                    // Batch summary
+                    const successCount = results.filter(r => r.success).length;
+                    const failCount = results.length - successCount;
+                    const summaryHtml = `
+                        <div class="log-summary">
+                            <div class="log-summary-title">📊 Batch Summary</div>
+                            <table class="log-summary-table">
+                                <tr><td>Files processed</td><td class="highlight">${successCount}/${results.length}</td></tr>
+                                ${failCount > 0 ? `<tr><td>Failed</td><td style="color:#f87171">${failCount}</td></tr>` : ''}
+                                <tr><td>Total original size</td><td>${formatBytes(totalOriginalSize)}</td></tr>
+                                <tr><td>Total new size</td><td>${formatBytes(totalNewSize)}</td></tr>
+                                <tr><td>Total saved</td><td class="${totalSaved > 0 ? 'saved' : 'increased'}">${totalSaved > 0 ? formatBytes(totalSaved) + ' (' + totalSavedPercent + '%)' : '+' + formatBytes(-totalSaved)}</td></tr>
+                                <tr><td>Time</td><td>${batchTimeElapsed.toFixed(1)}s</td></tr>
+                            </table>
+                        </div>
+                    `;
+                    logContainer.insertAdjacentHTML('beforeend', summaryHtml);
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }
                 
                 progressSection.classList.remove('visible');
                 convertBtn.style.display = 'none';
@@ -1447,22 +1556,38 @@
             } else {
                 // Single file processing (original code)
                 if (!currentFile || !currentZip) return;
-                convertBtn.disabled = true; progressSection.classList.add('visible'); logSection.classList.add('visible'); clearLog(); progress(0, 'Reading...');
+                convertBtn.disabled = true; 
+                progressSection.classList.add('visible'); 
+                if (advancedMode) {
+                    logSection.classList.add('visible'); 
+                    clearLog();
+                }
+                progress(0, 'Reading...');
                 try {
                     await processSingleFile();
-                } catch (e) { logError('Conversion failed: ' + e.message); console.error(e); convertBtn.disabled = false; }
+                } catch (e) { 
+                    if (advancedMode) logError('Conversion failed: ' + e.message); 
+                    else alert('Conversion failed: ' + e.message);
+                    console.error(e); 
+                    convertBtn.disabled = false; 
+                }
             }
         };
 
         async function processSingleFile() {
             const zip = currentZip;
-            log(`<strong>${currentFile.name}</strong> <span class="log-detail">(${formatBytes(currentFile.size)})</span>`, '', 'INFO'); 
-            log(`Quality: ${jpegQuality}% | Rotate & Split: ${selectedForSplit.size} images | Grayscale: ${enableGrayscale ? 'ON' : 'OFF'}`, '', 'INFO');
+            if (advancedMode) {
+                log(`<strong>${currentFile.name}</strong> <span class="log-detail">(${formatBytes(currentFile.size)})</span>`, '', 'INFO'); 
+                log(`Quality: ${jpegQuality}% | Rotate & Split: ${selectedForSplit.size} images | Grayscale: ${enableGrayscale ? 'ON' : 'OFF'}`, '', 'INFO');
+            }
             
             const renamed = {};
             zip.forEach(p => { const l = p.toLowerCase(); if (l.match(/\.(png|gif|webp|bmp|jpeg)$/)) renamed[p] = p.replace(/\.(png|gif|webp|bmp|jpeg)$/i, '.jpg'); });
             const imgs = []; zip.forEach(p => { if (p.toLowerCase().match(/\.(png|gif|webp|bmp|jpg|jpeg)$/)) imgs.push(p); });
-            statTotal.textContent = imgs.length; log(`Found <strong>${imgs.length}</strong> images to process`, '', 'INFO');
+            if (advancedMode) {
+                statTotal.textContent = imgs.length; 
+                log(`Found <strong>${imgs.length}</strong> images to process`, '', 'INFO');
+            }
 
             let conv = 0, svgFix = 0, splitCount = 0;
             const out = new JSZip(), entries = Object.entries(zip.files);
@@ -1507,15 +1632,17 @@
                         const newW = parts[0].width, newH = parts[0].height;
                         logImage(fileName, meta.origW, meta.origH, origFormat, meta.origSize, newW, newH, newSize, false, 0);
                     } else {
-                        const origName = path.split('/').pop();
-                        splitImages[origName] = [];
+                        // Use full path as key to avoid collisions with same-named files in different folders
+                        const splitKey = path;
+                        splitImages[splitKey] = [];
                         
                         let totalNewSize = 0;
+                        const partsInfo = []; // Collect info about each part for logging
                         for (const part of parts) {
                             const partName = baseName.split('/').pop() + part.suffix + newExt;
                             const partPath = (path.includes('/') ? path.substring(0, path.lastIndexOf('/') + 1) : '') + partName;
                             out.file(partPath, part.data, { compression: 'DEFLATE', createFolders: false });
-                            splitImages[origName].push({ 
+                            splitImages[splitKey].push({ 
                                 path: partPath, 
                                 imgName: partName,
                                 id: baseName.split('/').pop() + part.suffix,
@@ -1524,10 +1651,11 @@
                             splitCount++;
                             conv++;
                             totalNewSize += part.data.byteLength;
+                            partsInfo.push({ name: partName, width: part.width, height: part.height, size: part.data.byteLength });
                         }
                         
-                        // Log split image
-                        logImage(fileName, meta.origW, meta.origH, origFormat, meta.origSize, 0, 0, totalNewSize, true, parts.length);
+                        // Log split image with details about each part
+                        logImage(fileName, meta.origW, meta.origH, origFormat, meta.origSize, 0, 0, totalNewSize, true, parts.length, partsInfo);
                     }
                 } else if (low.match(/\.(xhtml|html|htm)$/)) {
                     xhtmlFiles[path] = await file.async('string');
@@ -1554,7 +1682,8 @@
                 }
                 
                 // For split images: replace single img tag with multiple img tags (all parts)
-                for (const [origName, parts] of Object.entries(splitImages)) {
+                for (const [splitKey, parts] of Object.entries(splitImages)) {
+                    const origName = splitKey.split('/').pop();
                     const newName = origName.replace(/\.(png|gif|webp|bmp|jpeg)$/i, '.jpg');
                     
                     // Find and replace the whole block: <p|div>...<img>...</p|div>
@@ -1618,7 +1747,8 @@
                 const opfDir = opfPath.includes('/') ? opfPath.substring(0, opfPath.lastIndexOf('/')) : '';
                 
                 // Add split images to manifest and update original image references
-                for (const [origName, parts] of Object.entries(splitImages)) {
+                for (const [splitKey, parts] of Object.entries(splitImages)) {
+                    const origName = splitKey.split('/').pop();
                     const origBaseName = origName.replace(/\.[^.]+$/, '');
                     
                     // Update original image reference to part1
@@ -1716,7 +1846,8 @@
                 out.file(path, data, { compression: 'DEFLATE', createFolders: false });
             }
 
-            statConverted.textContent = conv; progress(100, 'Generating...');
+            if (advancedMode) statConverted.textContent = conv; 
+            progress(100, 'Generating...');
             convertedBlob = await out.generateAsync({ type: 'blob', mimeType: 'application/epub+zip' });
             
             const originalSize = currentFile.size;
@@ -1725,22 +1856,24 @@
             const savedPercent = ((savedBytes / originalSize) * 100).toFixed(1);
             const timeElapsed = (Date.now() - logStartTime) / 1000;
             
-            statSize.textContent = formatBytes(newSize);
-            if (savedBytes > 0) {
-                statSaved.textContent = `${formatBytes(savedBytes)} (${savedPercent}%)`;
-            } else {
-                statSaved.textContent = `+${formatBytes(-savedBytes)}`;
+            if (advancedMode) {
+                statSize.textContent = formatBytes(newSize);
+                if (savedBytes > 0) {
+                    statSaved.textContent = `${formatBytes(savedBytes)} (${savedPercent}%)`;
+                } else {
+                    statSaved.textContent = `+${formatBytes(-savedBytes)}`;
+                }
+                
+                // Log summary table
+                log('Conversion complete!', 'success', 'DONE');
+                logSummary(originalSize, newSize, timeElapsed);
+                
+                // Post-conversion validation
+                log('Validating output...', '', 'INFO');
+                const finalZip = await JSZip.loadAsync(convertedBlob);
+                const postResult = await validateEpub(finalZip, true);
+                showValidation(postResult, true);
             }
-            
-            // Log summary table
-            log('Conversion complete!', 'success', 'DONE');
-            logSummary(originalSize, newSize, timeElapsed);
-            
-            // Post-conversion validation
-            log('Validating output...', '', 'INFO');
-            const finalZip = await JSZip.loadAsync(convertedBlob);
-            const postResult = await validateEpub(finalZip, true);
-            showValidation(postResult, true);
             
             progressSection.classList.remove('visible'); convertBtn.style.display = 'none'; qualitySection.style.display = 'none'; completeSection.classList.add('visible');
         }
