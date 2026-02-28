@@ -1,6 +1,6 @@
 # EPUB Baseline JPEG Converter
 
-A browser-based tool for optimizing EPUB files for e-ink readers. Converts images to baseline JPEG, fixes common EPUB issues, and supports Light Novel Mode for wide image handling.
+A browser-based tool for optimizing EPUB files for e-ink readers. Converts images to baseline JPEG, fixes common EPUB issues, and supports Rotate & Split mode for wide image handling.
 
 **No installation required · Works 100% offline after loading**
 
@@ -8,15 +8,22 @@ A browser-based tool for optimizing EPUB files for e-ink readers. Converts image
 
 ## Features
 
+### Simple & Advanced Modes
+- **Simple Mode** (default): Drop files, convert, download. No configuration needed.
+- **Advanced Mode**: Full control with quality settings, image selection grid, detailed logs, and validation info.
+
 ### Image Conversion
 - **Format conversion**: PNG, GIF, WebP, BMP → baseline JPEG
 - **Quality control**: 1-95% JPEG quality with presets (Low 60%, Medium 75%, High 85%, Max 95%)
 - **Smart scaling**: Automatically scales images to fit e-reader screen (default 480×800)
 - **Grayscale mode**: Converts all images to grayscale for e-ink displays
 
-### Light Novel Mode
+### Rotate & Split Mode
 Optimized for manga and light novels with horizontal spread images:
-- Rotates landscape images 90° clockwise
+- **Manual image selection**: Choose which images to process via thumbnail grid
+- **Reading order**: Images displayed in OPF spine order for accurate selection
+- **Quick selection**: "Select Landscape" button auto-selects wide images
+- Rotates selected landscape images 90° clockwise
 - Splits into multiple pages with configurable overlap (default 15%)
 - Right-to-left page order for correct reading flow
 - Generates unique IDs for split elements to maintain EPUB validity
@@ -37,13 +44,22 @@ Optimized for manga and light novels with horizontal spread images:
 
 ## Usage
 
-### Single File
-1. Drag & drop an EPUB file onto the drop zone (or click to browse)
-2. Adjust JPEG quality if needed
-3. Enable Light Novel Mode for manga/comics
-4. Enable Grayscale for e-ink optimization
-5. Click **Convert to Baseline JPEG**
-6. Download the converted EPUB
+### Simple Mode (Default)
+1. Drag & drop an EPUB file onto the drop zone
+2. Click **Convert to Baseline JPEG**
+3. Download the converted EPUB
+
+Default settings: 85% quality, grayscale ON, no rotation/split.
+
+### Advanced Mode
+1. Toggle **⚙️ Advanced Mode** below the drop zone
+2. Drop an EPUB file
+3. Adjust JPEG quality if needed
+4. Select images for Rotate & Split in the thumbnail grid
+5. Toggle Grayscale on/off
+6. Click **Convert to Baseline JPEG**
+7. Review detailed logs and stats
+8. Download the converted EPUB
 
 ### Batch Mode
 1. Drop multiple EPUB files at once
@@ -56,11 +72,11 @@ Optimized for manga and light novels with horizontal spread images:
 | Option | Default | Description |
 |--------|---------|-------------|
 | JPEG Quality | 85% | Compression level (1-95%). Lower = smaller file, higher = better quality |
-| Light Novel Mode | OFF | Rotate and split wide images for vertical e-readers |
+| Rotate & Split | OFF | Manually select images to rotate and split for vertical e-readers |
 | Grayscale | ON | Convert all images to grayscale |
 | Screen Width | 480px | Target e-reader screen width |
 | Screen Height | 800px | Target e-reader screen height |
-| Split Overlap | 15% | Overlap between split pages (Light Novel Mode) |
+| Split Overlap | 15% | Overlap between split pages (Rotate & Split mode) |
 
 ## Technical Details
 
@@ -70,7 +86,7 @@ Optimized for manga and light novels with horizontal spread images:
 1. Load image from EPUB
 2. Convert to RGB (handle RGBA/LA/P modes)
 3. Check dimensions vs screen size
-4. If Light Novel Mode enabled AND image is landscape AND exceeds screen:
+4. If image selected for Rotate & Split AND is landscape AND exceeds screen:
    a. Scale width to screen height (800px)
    b. Rotate 90° clockwise
    c. Split into pages (right-to-left) with overlap
@@ -79,7 +95,7 @@ Optimized for manga and light novels with horizontal spread images:
 7. Update all references (XHTML, OPF, CSS, NCX)
 ```
 
-### Split Algorithm (Light Novel Mode)
+### Split Algorithm (Rotate & Split Mode)
 
 For a 1600×800 rotated image on 480×800 screen with 15% overlap:
 - Effective width per page: 480 × (1 - 0.15) = 408px
@@ -143,6 +159,27 @@ Typical compression results (85% quality, grayscale enabled):
 - [Atkinson Hyperlegible Next](https://fonts.google.com/specimen/Atkinson+Hyperlegible) - UI font
 
 ## Changelog
+
+### v2.6.0
+- **Advanced Mode toggle**: Simple mode by default (just drop & convert), Advanced mode for full control
+- Simple mode hides quality settings, image picker, logs, validation details
+- Default settings: 85% quality, grayscale ON, no Rotate & Split
+- Split image logging now shows detailed part info (dimensions, sizes)
+
+### v2.5.1
+- Fixed collision bug when EPUBs contain same-named images in different folders
+- Split images now keyed by full path instead of basename
+
+### v2.5.0
+- **Renamed "Light Novel Mode" to "Rotate & Split"** for clarity
+- **Manual image selection**: Thumbnail grid to select which images to rotate & split
+- **Reading order**: Images displayed in OPF spine order
+- **Quick selection buttons**: Select Landscape, Select All, Clear Selection
+- Improved OPF media-type patching (more precise regex)
+
+### v2.4.0
+- Image picker grid for manual Rotate & Split selection
+- Removed automatic landscape detection
 
 ### v2.3.0
 - Enhanced logging system with timestamps and colored tags
