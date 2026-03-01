@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Guide — Baseline JPEG Converter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-tertiary: #1e1e1e;
+            --accent: #ffffff;
+            --accent-dim: #b0b0b0;
+            --text-primary: #f0f0f0;
+            --text-secondary: #909090;
+            --text-tertiary: #606060;
+            --border: #2a2a2a;
+            --success: #4ade80;
+            --error: #f87171;
+            --warning: #fbbf24;
+            --info: #60a5fa;
+            --font: 'Atkinson Hyperlegible Next', sans-serif;
+        }
+        
+        [data-theme="light"] {
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #e8e8e8;
+            --accent: #1a1a1a;
+            --accent-dim: #404040;
+            --text-primary: #1a1a1a;
+            --text-secondary: #555555;
+            --text-tertiary: #888888;
+            --border: #d0d0d0;
+            --success: #16a34a;
+            --error: #dc2626;
+            --warning: #d97706;
+            --info: #2563eb;
+        }
+        
+        body { 
+            font-family: var(--font); 
+            background: var(--bg-primary); 
+            color: var(--text-primary); 
+            min-height: 100vh; 
+            line-height: 1.7;
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 60px 24px; 
+        }
+        
+        /* Header */
+        header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 48px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .back-link:hover {
+            color: var(--text-primary);
+            border-color: var(--accent-dim);
+        }
+        
+        .theme-toggle { 
+            background: var(--bg-secondary); 
+            border: 1px solid var(--border); 
+            border-radius: 8px; 
+            padding: 8px 12px; 
+            cursor: pointer; 
+            font-size: 1.1rem; 
+            transition: all 0.2s; 
+        }
+        .theme-toggle:hover { background: var(--bg-tertiary); }
+        [data-theme="light"] .theme-toggle .icon-dark { display: none; }
+        [data-theme="dark"] .theme-toggle .icon-light, :root:not([data-theme]) .theme-toggle .icon-light { display: none; }
+        
+        /* Content */
+        h1 { 
+            font-size: 2.2rem; 
+            font-weight: 700; 
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+        
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 48px;
+        }
+        
+        h2 { 
+            font-size: 1.4rem; 
+            font-weight: 600; 
+            margin-top: 48px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+        
+        h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+        
+        p { 
+            margin-bottom: 16px; 
+            color: var(--text-secondary);
+        }
+        
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+        }
+        
+        .card-title {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-title .icon {
+            font-size: 1.2rem;
+        }
+        
+        .card p {
+            margin-bottom: 12px;
+        }
+        
+        .card p:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* Settings grid */
+        .settings-grid {
+            display: grid;
+            gap: 16px;
+            margin: 20px 0;
+        }
+        
+        .setting-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .setting-name {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .setting-default {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+            background: var(--bg-tertiary);
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: auto;
+        }
+        
+        .setting-desc {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        
+        /* Mode buttons demo */
+        .mode-demo {
+            display: flex;
+            gap: 12px;
+            margin: 16px 0;
+            flex-wrap: wrap;
+        }
+        
+        .mode-demo-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .mode-demo-btn.cw { background: #2563eb; }
+        .mode-demo-btn.ccw { background: #d97706; }
+        .mode-demo-btn.vertical { background: #059669; }
+        
+        /* Tips */
+        .tip {
+            background: var(--bg-tertiary);
+            border-left: 3px solid var(--info);
+            padding: 16px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .tip-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--info);
+            margin-bottom: 8px;
+        }
+        
+        .tip p {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9rem;
+        }
+        
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        td {
+            color: var(--text-secondary);
+        }
+        
+        tr:hover td {
+            background: var(--bg-secondary);
+        }
+        
+        /* Code */
+        code {
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 0.85em;
+        }
+        
+        /* Footer */
+        footer {
+            margin-top: 64px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-tertiary);
+            font-size: 0.85rem;
+        }
+        
+        footer a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        
+        footer a:hover {
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+    
+    <div class="container">
+        <header>
+            <a href="index.html" class="back-link">← Back to Converter</a>
+            <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode">
+                <span class="icon-light">☀️</span>
+                <span class="icon-dark">🌙</span>
+            </button>
+        </header>
+        
+        <h1>📖 User Guide</h1>
+        <p class="subtitle">Complete documentation for the Baseline JPEG Converter</p>
+        
+        <!-- Overview -->
+        <h2>Overview</h2>
+        <p>This tool converts images in EPUB files to baseline JPEG format, optimized for e-ink readers like XTEink X4, Kindle, and Kobo devices. It runs entirely in your browser — no files are uploaded to any server.</p>
+        
+        <div class="card">
+            <div class="card-title"><span class="icon">✨</span> Key Features</div>
+            <p>• Convert PNG, GIF, WebP, BMP to baseline JPEG</p>
+            <p>• <strong>Smart scaling</strong> to 480×800 — dramatically reduces file size</p>
+            <p>• Grayscale conversion for e-ink displays</p>
+            <p>• Rotate & split wide images for vertical screens</p>
+            <p>• Fix SVG covers and metadata issues</p>
+            <p>• Batch processing multiple EPUBs</p>
+        </div>
+        
+        <!-- Modes -->
+        <h2>Simple vs Advanced Mode</h2>
+        
+        <div class="settings-grid">
+            <div class="setting-item">
+                <div class="setting-name">
+                    Simple Mode
+                    <span class="setting-default">Default</span>
+                </div>
+                <div class="setting-desc">
+                    Drop your EPUB, click Convert, download. Uses sensible defaults: 85% quality, grayscale ON. No configuration needed — perfect for quick conversions.
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-name">
+                    ⚙️ Advanced Mode
+                </div>
+                <div class="setting-desc">
+                    Toggle to reveal all settings: quality slider, image selection grid, rotate & split options, overlap controls, and detailed conversion logs. Use when you need fine control.
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quality Settings -->
+        <h2>Quality Settings</h2>
+        
+        <h3>🎨 JPEG Quality</h3>
+        <p>Controls the compression level for output images. Higher values mean better quality but larger files.</p>
+        
+        <table>
+            <tr>
+                <th>Preset</th>
+                <th>Value</th>
+                <th>Best For</th>
+            </tr>
+            <tr>
+                <td>Low</td>
+                <td>60%</td>
+                <td>Smallest files, text-heavy books</td>
+            </tr>
+            <tr>
+                <td>Medium</td>
+                <td>75%</td>
+                <td>Good balance for most content</td>
+            </tr>
+            <tr>
+                <td>High</td>
+                <td>85%</td>
+                <td>Recommended default, sharp images</td>
+            </tr>
+            <tr>
+                <td>Max</td>
+                <td>95%</td>
+                <td>Best quality, manga/art with fine detail</td>
+            </tr>
+        </table>
+        
+        <div class="tip">
+            <div class="tip-title">💡 Tip</div>
+            <p>For e-ink displays, 85% is usually indistinguishable from higher values while saving significant space.</p>
+        </div>
+        
+        <h3>⚫ Grayscale</h3>
+        <p>Converts all images to grayscale. Recommended for e-ink readers which display in grayscale anyway — reduces file size without visible quality loss.</p>
+        
+        <div class="setting-item">
+            <div class="setting-name">
+                Grayscale
+                <span class="setting-default">ON</span>
+            </div>
+            <div class="setting-desc">
+                When enabled, converts RGB images to single-channel grayscale. Turn OFF only if you read on a color e-reader or plan to view on tablets/phones.
+            </div>
+        </div>
+        
+        <!-- Rotate & Split -->
+        <h2>Rotate & Split Mode</h2>
+        <p>For manga, comics, and light novels with horizontal spread images that don't fit on vertical e-reader screens.</p>
+        
+        <h3>Processing Modes</h3>
+        <p>Each selected image can have its own processing mode:</p>
+        
+        <div class="mode-demo">
+            <div class="mode-demo-btn cw">↻ CW</div>
+            <div class="mode-demo-btn ccw">↺ CCW</div>
+            <div class="mode-demo-btn vertical">┃┃ Vertical</div>
+        </div>
+        
+        <div class="settings-grid">
+            <div class="setting-item">
+                <div class="setting-name">
+                    <span style="color: #2563eb;">↻ CW</span> — Rotate Clockwise + Split
+                </div>
+                <div class="setting-desc">
+                    Rotates the image 90° clockwise, then splits into vertical strips from right to left. Use for Japanese manga (right-to-left reading order). The original right side becomes the first page.
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-name">
+                    <span style="color: #d97706;">↺ CCW</span> — Rotate Counter-Clockwise + Split
+                </div>
+                <div class="setting-desc">
+                    Rotates the image 90° counter-clockwise, then splits left to right. Use for Western comics or when CW produces wrong reading order.
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-name">
+                    <span style="color: #059669;">┃┃ Vertical</span> — Split Only (No Rotation)
+                </div>
+                <div class="setting-desc">
+                    Splits a wide image vertically without rotation. Creates left and right halves. Use for panoramic images or spreads that should stay horizontal in orientation.
+                </div>
+            </div>
+        </div>
+        
+        <h3>Overlap Settings</h3>
+        <p>When an image is split into multiple parts, overlap ensures you don't miss content at the seams.</p>
+        
+        <div class="settings-grid">
+            <div class="setting-item">
+                <div class="setting-name">
+                    ↻ Rotate Overlap
+                    <span class="setting-default">15%</span>
+                </div>
+                <div class="setting-desc">
+                    Overlap percentage for CW and CCW modes. Each split part shares this much content with adjacent parts. Options: 5%, 10%, 15%.
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-name">
+                    ┃ Vertical Overlap
+                    <span class="setting-default">15%</span>
+                </div>
+                <div class="setting-desc">
+                    Separate overlap setting for Vertical split mode. Adjust independently based on content type.
+                </div>
+            </div>
+        </div>
+        
+        <div class="tip">
+            <div class="tip-title">💡 Choosing Overlap</div>
+            <p><strong>15%</strong> — Safe default, ensures nothing is missed<br>
+            <strong>10%</strong> — Good balance, less redundancy<br>
+            <strong>5%</strong> — Minimal overlap, best for simple content</p>
+        </div>
+        
+        <!-- Image Grid -->
+        <h2>Image Selection Grid</h2>
+        <p>In Advanced Mode, all images from your EPUB are displayed in a thumbnail grid for selection.</p>
+        
+        <h3>Selection States</h3>
+        <table>
+            <tr>
+                <th>Indicator</th>
+                <th>Meaning</th>
+            </tr>
+            <tr>
+                <td>Green ✓ badge</td>
+                <td>Image is selected for processing</td>
+            </tr>
+            <tr>
+                <td>Grayed out with ✓</td>
+                <td>Image fits in 480×800 — no rotation/split needed</td>
+            </tr>
+            <tr>
+                <td>Disabled ┃┃ button</td>
+                <td>Image width ≤480px — vertical split not applicable</td>
+            </tr>
+        </table>
+        
+        <h3>Quick Selection Buttons</h3>
+        <div class="settings-grid">
+            <div class="setting-item">
+                <div class="setting-name">Select Landscape</div>
+                <div class="setting-desc">Automatically selects all images where width > height. Perfect for manga spreads.</div>
+            </div>
+            <div class="setting-item">
+                <div class="setting-name">Select All</div>
+                <div class="setting-desc">Selects all images that can be processed (excludes locked small images).</div>
+            </div>
+            <div class="setting-item">
+                <div class="setting-name">Clear Selection</div>
+                <div class="setting-desc">Deselects all images.</div>
+            </div>
+        </div>
+        
+        <!-- EPUB Repairs -->
+        <h2>Automatic EPUB Repairs</h2>
+        <p>The converter automatically detects and fixes common EPUB issues:</p>
+        
+        <div class="settings-grid">
+            <div class="setting-item">
+                <div class="setting-name">SVG Cover Fix</div>
+                <div class="setting-desc">Unwraps images from <code>&lt;svg&gt;&lt;image xlink:href="..."&gt;</code> wrappers that some e-readers can't display.</div>
+            </div>
+            <div class="setting-item">
+                <div class="setting-name">Cover Metadata</div>
+                <div class="setting-desc">Ensures the OPF manifest contains proper <code>&lt;meta name="cover"&gt;</code> entry.</div>
+            </div>
+            <div class="setting-item">
+                <div class="setting-name">NCX Sync</div>
+                <div class="setting-desc">Synchronizes <code>dtb:uid</code> in NCX file with OPF <code>dc:identifier</code>.</div>
+            </div>
+            <div class="setting-item">
+                <div class="setting-name">Manifest Updates</div>
+                <div class="setting-desc">Updates all image references and media-types after conversion to JPEG.</div>
+            </div>
+        </div>
+        
+        <!-- Target Device -->
+        <h2>Smart Scaling</h2>
+        <p>All images are automatically scaled to fit within the target screen dimensions. This is one of the most impactful optimizations — large source images (often 2000×3000px or more) are reduced to fit 480×800, dramatically reducing file size and improving e-reader responsiveness.</p>
+        
+        <div class="card">
+            <div class="card-title"><span class="icon">📐</span> How Scaling Works</div>
+            <p>• Images larger than 480×800 are scaled down (aspect ratio preserved)</p>
+            <p>• Images that already fit are left untouched</p>
+            <p>• Typical reduction: 70-90% smaller file size</p>
+            <p>• Result: Faster page turns, less memory usage on e-reader</p>
+        </div>
+        
+        <div class="tip">
+            <div class="tip-title">💡 Why This Matters</div>
+            <p>E-ink displays refresh slowly. Smaller images mean faster rendering, smoother page turns, and longer battery life. A 3000×4000px PNG scaled to 480×800 JPEG can go from 5MB to under 50KB.</p>
+        </div>
+        
+        <h3>Target Dimensions</h3>
+        
+        <table>
+            <tr>
+                <th>Setting</th>
+                <th>Value</th>
+                <th>Notes</th>
+            </tr>
+            <tr>
+                <td>Max Width</td>
+                <td>480px</td>
+                <td>XTEink X4 screen width</td>
+            </tr>
+            <tr>
+                <td>Max Height</td>
+                <td>800px</td>
+                <td>XTEink X4 screen height</td>
+            </tr>
+        </table>
+        
+        <p style="margin-top: 16px; color: var(--text-tertiary); font-size: 0.9rem;">These values are optimized for XTEink X4 (480×800 @ 220 PPI). For other devices, the code can be modified.</p>
+        
+        <!-- Batch Mode -->
+        <h2>Batch Processing</h2>
+        <p>Drop multiple EPUB files at once to convert them all with the same settings.</p>
+        
+        <div class="card">
+            <div class="card-title"><span class="icon">📚</span> Batch Features</div>
+            <p>• Individual progress tracking per file</p>
+            <p>• Combined statistics (total saved, conversion count)</p>
+            <p>• Download all converted files as a single ZIP</p>
+            <p>• Failed files are reported but don't stop the batch</p>
+        </div>
+        
+        <!-- Export Log -->
+        <h2>Export Log</h2>
+        <p>In Advanced Mode, click the <strong>📥 Export</strong> button in the log section to save a text file with:</p>
+        <p>• Timestamp for each operation</p>
+        <p>• Per-image conversion details (dimensions, sizes, compression ratio)</p>
+        <p>• Split image details (part names, dimensions)</p>
+        <p>• Final summary statistics</p>
+        
+        <!-- Keyboard Shortcuts -->
+        <h2>Tips & Best Practices</h2>
+        
+        <div class="tip">
+            <div class="tip-title">📚 For Manga</div>
+            <p>Use <strong>Select Landscape</strong> to auto-select spreads, then apply <strong>↻ CW</strong> mode with 15% overlap.</p>
+        </div>
+        
+        <div class="tip">
+            <div class="tip-title">📖 For Light Novels</div>
+            <p>Most illustrations are already portrait. Enable grayscale and use 85% quality — no rotation needed.</p>
+        </div>
+        
+        <div class="tip">
+            <div class="tip-title">💾 For Smallest Files</div>
+            <p>Use 60% quality + grayscale. Good for text-heavy books where image quality is less critical.</p>
+        </div>
+        
+        <footer>
+            <a href="index.html">Baseline JPEG Converter</a> • Made by Megabit & pablohc
+        </footer>
+    </div>
+    
+    <script>
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.onclick = () => {
+            const current = document.documentElement.getAttribute('data-theme') || 'dark';
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+        };
+    </script>
+</body>
+</html>

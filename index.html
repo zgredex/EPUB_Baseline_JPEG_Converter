@@ -7,29 +7,60 @@
     <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        /* Dark mode (default) - black/gray */
         :root {
-            --bg-primary: #0d0a12;
-            --bg-secondary: #15111d;
-            --bg-tertiary: #1e1829;
-            --accent: #a78bfa;
-            --accent-dim: #8b5cf6;
-            --accent-bright: #c4b5fd;
-            --accent-glow: rgba(167, 139, 250, 0.15);
-            --text-primary: #f5f3ff;
-            --text-secondary: #a8a3b8;
-            --text-tertiary: #6b6580;
-            --border: #2e2640;
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-tertiary: #1e1e1e;
+            --accent: #ffffff;
+            --accent-dim: #b0b0b0;
+            --accent-bright: #ffffff;
+            --accent-glow: rgba(255, 255, 255, 0.08);
+            --text-primary: #f0f0f0;
+            --text-secondary: #909090;
+            --text-tertiary: #606060;
+            --border: #2a2a2a;
+            --success: #4ade80;
             --error: #f87171;
             --warning: #fbbf24;
-            --info: #818cf8;
+            --info: #60a5fa;
             --font: 'Atkinson Hyperlegible Next', sans-serif;
         }
-        body { font-family: var(--font); background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; }
+        
+        /* Light mode */
+        [data-theme="light"] {
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #e8e8e8;
+            --accent: #1a1a1a;
+            --accent-dim: #404040;
+            --accent-bright: #000000;
+            --accent-glow: rgba(0, 0, 0, 0.05);
+            --text-primary: #1a1a1a;
+            --text-secondary: #555555;
+            --text-tertiary: #888888;
+            --border: #d0d0d0;
+            --success: #16a34a;
+            --error: #dc2626;
+            --warning: #d97706;
+            --info: #2563eb;
+        }
+        
+        /* Header buttons */
+        .header-buttons { position: absolute; top: 20px; right: 20px; display: flex; gap: 8px; z-index: 10; }
+        .header-btn { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; text-decoration: none; display: flex; align-items: center; justify-content: center; }
+        .header-btn:hover { background: var(--bg-tertiary); border-color: var(--accent-dim); }
+        [data-theme="light"] .header-btn .icon-dark { display: none; }
+        [data-theme="dark"] .header-btn .icon-light, :root:not([data-theme]) .header-btn .icon-light { display: none; }
+        
+        body { font-family: var(--font); background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; transition: background 0.3s, color 0.3s; }
         .grain { position: fixed; inset: 0; pointer-events: none; opacity: 0.03; z-index: 1000; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); }
+        [data-theme="light"] .grain { opacity: 0.02; }
         .container { max-width: 720px; margin: 0 auto; padding: 60px 24px; position: relative; z-index: 1; }
         header { text-align: center; margin-bottom: 48px; }
         .logo { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-        .logo-icon { width: 48px; height: 48px; background: linear-gradient(135deg, var(--accent), var(--accent-dim)); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 8px 32px var(--accent-glow); }
+        .logo-icon { width: 48px; height: 48px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
         h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; }
         .subtitle { color: var(--text-secondary); font-size: 1.05rem; margin-top: 8px; }
         .drop-zone { border: 2px dashed var(--border); border-radius: 16px; padding: 64px 32px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg-secondary); position: relative; overflow: hidden; }
@@ -56,17 +87,17 @@
         .validation-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
         .validation-icon { font-size: 1.2rem; }
         .validation-title { font-weight: 500; font-size: 0.95rem; }
-        .validation-section.success { border-color: #22c55e33; }
-        .validation-section.success .validation-title { color: #4ade80; }
-        .validation-section.warning { border-color: #f59e0b33; }
-        .validation-section.warning .validation-title { color: #fbbf24; }
-        .validation-section.error { border-color: #ef444433; }
-        .validation-section.error .validation-title { color: #f87171; }
+        .validation-section.success { border-color: rgba(74, 222, 128, 0.2); }
+        .validation-section.success .validation-title { color: var(--success); }
+        .validation-section.warning { border-color: rgba(251, 191, 36, 0.2); }
+        .validation-section.warning .validation-title { color: var(--warning); }
+        .validation-section.error { border-color: rgba(248, 113, 113, 0.2); }
+        .validation-section.error .validation-title { color: var(--error); }
         .validation-issues { font-size: 0.85rem; color: var(--text-secondary); }
         .validation-issue { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; }
-        .validation-issue.error { color: #f87171; }
-        .validation-issue.warning { color: #fbbf24; }
-        .validation-issue.success { color: #4ade80; }
+        .validation-issue.error { color: var(--error); }
+        .validation-issue.warning { color: var(--warning); }
+        .validation-issue.success { color: var(--success); }
         .validation-issue.info { color: var(--info); }
         .quality-section { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 24px; display: none; }
         .quality-section.visible { display: block; animation: slideUp 0.3s; }
@@ -93,8 +124,8 @@
         .progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-dim)); border-radius: 8px; width: 0%; transition: width 0.3s; }
         .progress-text { display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; color: var(--text-secondary); }
         .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 28px; border-radius: 10px; font-family: var(--font); font-size: 1rem; font-weight: 500; cursor: pointer; transition: all 0.2s; border: none; width: 100%; margin-top: 24px; }
-        .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-dim)); color: #0d0a12; box-shadow: 0 4px 24px var(--accent-glow); }
-        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 32px var(--accent-glow); }
+        .btn-primary { background: var(--accent); color: var(--bg-primary); box-shadow: 0 4px 24px var(--accent-glow); }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 32px var(--accent-glow); background: var(--accent-dim); }
         .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-secondary { background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border); }
         .btn-secondary:hover { background: var(--border); }
@@ -123,15 +154,17 @@
         .log-entry.info { color: var(--info); }
         .log-timestamp { color: var(--text-tertiary); font-size: 0.75rem; min-width: 52px; }
         .log-tag { font-size: 0.7rem; font-weight: 600; padding: 1px 6px; border-radius: 3px; text-transform: uppercase; min-width: 56px; text-align: center; }
-        .log-tag.convert { background: #8b5cf620; color: #a78bfa; }
-        .log-tag.split { background: #f59e0b20; color: #fbbf24; }
-        .log-tag.fix { background: #22c55e20; color: #4ade80; }
-        .log-tag.skip { background: #6b728020; color: #9ca3af; }
-        .log-tag.info { background: #3b82f620; color: #60a5fa; }
-        .log-tag.error { background: #ef444420; color: #f87171; }
-        .log-tag.done { background: #10b98120; color: #34d399; }
+        .log-tag.convert { background: rgba(100, 100, 100, 0.15); color: var(--text-secondary); }
+        .log-tag.split { background: rgba(251, 191, 36, 0.15); color: var(--warning); }
+        .log-tag.fix { background: rgba(74, 222, 128, 0.15); color: var(--success); }
+        .log-tag.skip { background: rgba(100, 100, 100, 0.15); color: var(--text-tertiary); }
+        .log-tag.info { background: rgba(96, 165, 250, 0.15); color: var(--info); }
+        .log-tag.error { background: rgba(248, 113, 113, 0.15); color: var(--error); }
+        .log-tag.done { background: rgba(74, 222, 128, 0.15); color: var(--success); }
         .log-message { flex: 1; }
         .log-detail { color: var(--text-tertiary); font-size: 0.75rem; }
+        .log-saved { color: var(--success); }
+        .log-error { color: var(--error); }
         .log-summary { background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; margin-top: 12px; overflow: hidden; }
         .log-summary-title { background: var(--bg-secondary); padding: 10px 14px; font-weight: 600; font-size: 0.85rem; border-bottom: 1px solid var(--border); color: var(--accent); }
         .log-summary-table { width: 100%; font-size: 0.8rem; }
@@ -139,9 +172,19 @@
         .log-summary-table tr:last-child td { border-bottom: none; }
         .log-summary-table td:first-child { color: var(--text-tertiary); width: 45%; }
         .log-summary-table td:last-child { color: var(--text-primary); font-weight: 500; text-align: right; }
-        .log-summary-table .highlight { color: var(--accent); }
-        .log-summary-table .saved { color: #4ade80; }
-        .log-summary-table .increased { color: #fbbf24; }
+        .log-summary-table .highlight { color: var(--text-primary); font-weight: 600; }
+        .log-summary-table .saved { color: var(--success); }
+        .log-summary-table .increased { color: var(--warning); }
+        
+        /* Overlap settings */
+        .overlap-settings { display: flex; gap: 24px; margin: 12px 0; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; flex-wrap: wrap; }
+        .overlap-group { display: flex; align-items: center; gap: 10px; }
+        .overlap-label { font-size: 0.8rem; color: var(--text-tertiary); min-width: 110px; }
+        .overlap-options { display: flex; gap: 4px; }
+        .overlap-btn { padding: 4px 10px; font-size: 0.75rem; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+        .overlap-btn:hover { border-color: var(--accent-dim); color: var(--text-primary); }
+        .overlap-btn.active { background: var(--text-primary); border-color: var(--text-primary); color: var(--bg-primary); }
+        
         .image-picker { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 24px; display: none; }
         .image-picker.visible { display: block; animation: slideUp 0.3s; }
         .image-picker-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
@@ -158,11 +201,30 @@
         .image-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
         .image-thumb-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%); opacity: 0; transition: opacity 0.2s; }
         .image-thumb:hover .image-thumb-overlay { opacity: 1; }
-        .image-thumb.selected .image-thumb-overlay { opacity: 1; background: linear-gradient(to top, rgba(167,139,250,0.4) 0%, transparent 50%); }
+        .image-thumb.selected .image-thumb-overlay { opacity: 1; background: linear-gradient(to top, rgba(255,255,255,0.2) 0%, transparent 50%); }
+        [data-theme="light"] .image-thumb.selected .image-thumb-overlay { background: linear-gradient(to top, rgba(0,0,0,0.15) 0%, transparent 50%); }
         .image-thumb-info { position: absolute; bottom: 0; left: 0; right: 0; padding: 6px; font-size: 0.65rem; color: white; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .image-thumb-badge { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; opacity: 0; transform: scale(0.5); transition: all 0.2s; }
+        .image-thumb-badge { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; background: #10b981; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: white; opacity: 0; transform: scale(0.5); transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
         .image-thumb.selected .image-thumb-badge { opacity: 1; transform: scale(1); }
+        .image-thumb.locked { opacity: 0.5; cursor: not-allowed; }
+        .image-thumb.locked:hover { border-color: var(--border); transform: none; }
+        .image-thumb-lock { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; background: var(--text-tertiary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--bg-primary); }
         .image-thumb-dims { position: absolute; top: 6px; left: 6px; font-size: 0.6rem; background: rgba(0,0,0,0.6); color: white; padding: 2px 5px; border-radius: 4px; }
+        
+        /* Mode selection buttons in thumbnail */
+        .image-thumb-modes { position: absolute; bottom: 0; left: 0; right: 0; display: none; justify-content: center; gap: 2px; padding: 3px; background: rgba(0,0,0,0.85); }
+        .image-thumb.selected .image-thumb-modes { display: flex; }
+        .mode-btn { padding: 2px 5px; font-size: 0.55rem; font-weight: 600; background: #333; border: 1px solid #555; border-radius: 3px; color: #999; cursor: pointer; transition: all 0.15s; white-space: nowrap; line-height: 1.2; }
+        .mode-btn:hover { background: #444; color: #fff; border-color: #777; }
+        .mode-btn.disabled { opacity: 0.3; cursor: not-allowed; }
+        .mode-btn.disabled:hover { background: #333; color: #999; border-color: #555; }
+        /* CW - Blue tint */
+        .mode-btn.active[data-mode="cw"] { background: #2563eb; border-color: #3b82f6; color: white; }
+        /* CCW - Orange tint */
+        .mode-btn.active[data-mode="ccw"] { background: #d97706; border-color: #f59e0b; color: white; }
+        /* Vertical - Green tint */
+        .mode-btn.active[data-mode="vertical"] { background: #059669; border-color: #10b981; color: white; }
+        
         .complete-section { text-align: center; padding: 32px; display: none; }
         .complete-section.visible { display: block; animation: slideUp 0.3s; }
         .complete-icon { font-size: 64px; margin-bottom: 16px; }
@@ -216,6 +278,13 @@
 <body>
     <div class="grain"></div>
     <div class="container">
+        <div class="header-buttons">
+            <a href="guide.html" class="header-btn" title="User Guide">📖</a>
+            <button class="header-btn" id="theme-toggle" title="Toggle light/dark mode">
+                <span class="icon-light">☀️</span>
+                <span class="icon-dark">🌙</span>
+            </button>
+        </div>
         <header>
             <div class="logo">
                 <div class="logo-icon">📚</div>
@@ -293,9 +362,27 @@
                 <div class="toggle-row">
                     <div class="toggle-info">
                         <div class="toggle-title">🔄 Rotate & Split</div>
-                        <div class="toggle-desc">Select images below to rotate 90° CW and split into multiple pages</div>
+                        <div class="toggle-desc">Select images below and choose processing mode per image</div>
                     </div>
                     <span class="image-picker-count" id="split-count">0 selected</span>
+                </div>
+                <div class="overlap-settings">
+                    <div class="overlap-group">
+                        <span class="overlap-label">↻ Rotate overlap:</span>
+                        <div class="overlap-options" id="rotate-overlap-options">
+                            <button class="overlap-btn" data-value="5">5%</button>
+                            <button class="overlap-btn" data-value="10">10%</button>
+                            <button class="overlap-btn active" data-value="15">15%</button>
+                        </div>
+                    </div>
+                    <div class="overlap-group">
+                        <span class="overlap-label">┃ Vertical overlap:</span>
+                        <div class="overlap-options" id="vertical-overlap-options">
+                            <button class="overlap-btn" data-value="5">5%</button>
+                            <button class="overlap-btn" data-value="10">10%</button>
+                            <button class="overlap-btn active" data-value="15">15%</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="toggle-row">
                     <div class="toggle-info">
@@ -312,7 +399,7 @@
 
         <div class="image-picker" id="image-picker">
             <div class="image-picker-header">
-                <span class="image-picker-title"><span>🖼️</span> Select Images to Rotate & Split</span>
+                <span class="image-picker-title"><span>🖼️</span> Select Images & Processing Mode</span>
                 <span class="image-picker-count" id="picker-count">0 / 0 selected</span>
             </div>
             <div class="image-picker-actions">
@@ -362,12 +449,29 @@
             </div>
         </div>
 
-        <footer>Made by <a href="#">Megabit & pablohc</a> • v2.6.0 • Runs entirely in your browser</footer>
+        <footer>Made by <a href="#">Megabit & pablohc</a> • <a href="guide.html">📖 User Guide</a> • v2.9.0</footer>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script>
+        // Theme initialization (runs immediately)
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+    <script>
         const $ = id => document.getElementById(id);
+        
+        // Theme toggle
+        const themeToggle = $('theme-toggle');
+        themeToggle.onclick = () => {
+            const current = document.documentElement.getAttribute('data-theme') || 'dark';
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+        };
+        
         const dropZone = $('drop-zone'), fileInput = $('file-input'), fileInfo = $('file-info');
         const fileName = $('file-name'), fileSize = $('file-size'), qualitySection = $('quality-section');
         const qualitySlider = $('quality-slider'), qualityInput = $('quality-input');
@@ -429,8 +533,26 @@
         };
         
         // Image picker state
-        let selectedForSplit = new Set();  // Set of image paths selected for Rotate & Split
+        let selectedForSplit = new Map();  // Map: path -> mode ('cw' | 'ccw' | 'vertical')
         let imageMetadata = {};            // path -> {width, height, blobUrl}
+        let rotateOverlap = 15;            // Overlap for rotate+split modes (5, 10, 15)
+        let verticalOverlap = 15;          // Overlap for vertical split mode (5, 10, 15)
+        
+        // Overlap button handlers
+        document.querySelectorAll('#rotate-overlap-options .overlap-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('#rotate-overlap-options .overlap-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                rotateOverlap = parseInt(btn.dataset.value);
+            };
+        });
+        document.querySelectorAll('#vertical-overlap-options .overlap-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('#vertical-overlap-options .overlap-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                verticalOverlap = parseInt(btn.dataset.value);
+            };
+        });
 
         async function validateEpub(zip, isAfter = false) {
             const issues = [];
@@ -554,23 +676,57 @@
         // Image picker functions
         function updatePickerCount() {
             const total = Object.keys(imageMetadata).length;
+            const selectable = Object.keys(imageMetadata).filter(p => canBeSelected(p)).length;
             const selected = selectedForSplit.size;
-            pickerCount.textContent = `${selected} / ${total} selected`;
+            pickerCount.textContent = `${selected} / ${selectable} selected`;
             splitCount.textContent = `${selected} selected`;
         }
         
+        // Check if image can be selected (doesn't fit in 480x800)
+        function canBeSelected(path) {
+            const meta = imageMetadata[path];
+            if (!meta) return false;
+            // Block if image fits entirely in 480x800
+            return !(meta.width <= 480 && meta.height <= 800);
+        }
+        
         function toggleImageSelection(path) {
+            // Block selection for images that fit in 480x800
+            if (!canBeSelected(path)) return;
+            
             if (selectedForSplit.has(path)) {
                 selectedForSplit.delete(path);
             } else {
-                selectedForSplit.add(path);
+                selectedForSplit.set(path, 'cw'); // Default mode: rotate CW + split
             }
             // Update thumbnail visual state
             const thumb = document.querySelector(`.image-thumb[data-path="${CSS.escape(path)}"]`);
             if (thumb) {
                 thumb.classList.toggle('selected', selectedForSplit.has(path));
+                updateModeButtons(thumb, path);
             }
             updatePickerCount();
+        }
+        
+        function setImageMode(path, mode) {
+            if (selectedForSplit.has(path)) {
+                // Block 'vertical' mode for images with width <= 480
+                if (mode === 'vertical' && imageMetadata[path] && imageMetadata[path].width <= 480) {
+                    return;
+                }
+                selectedForSplit.set(path, mode);
+                const thumb = document.querySelector(`.image-thumb[data-path="${CSS.escape(path)}"]`);
+                if (thumb) updateModeButtons(thumb, path);
+            }
+        }
+        
+        function updateModeButtons(thumb, path) {
+            const mode = selectedForSplit.get(path) || 'cw';
+            const buttons = thumb.querySelectorAll('.mode-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.mode === mode) btn.classList.add('active');
+            });
         }
         
         async function loadImageThumbnails(zip) {
@@ -694,18 +850,37 @@
                     
                     imageMetadata[path] = { ...dimensions, blobUrl };
                     
+                    // Check if image fits in screen (locked - no processing needed)
+                    const fitsInScreen = dimensions.width <= 480 && dimensions.height <= 800;
+                    
                     // Create thumbnail element
                     const thumb = document.createElement('div');
-                    thumb.className = 'image-thumb';
+                    thumb.className = 'image-thumb' + (fitsInScreen ? ' locked' : '');
                     thumb.dataset.path = path;
                     thumb.innerHTML = `
                         <img src="${blobUrl}" alt="${path.split('/').pop()}">
                         <div class="image-thumb-dims">${dimensions.width}×${dimensions.height}</div>
                         <div class="image-thumb-overlay"></div>
                         <div class="image-thumb-info">${path.split('/').pop()}</div>
-                        <div class="image-thumb-badge">✓</div>
+                        ${fitsInScreen ? '<div class="image-thumb-lock" title="Fits in 480×800 - no processing needed">✓</div>' : '<div class="image-thumb-badge">✓</div>'}
+                        ${fitsInScreen ? '' : `<div class="image-thumb-modes">
+                            <button class="mode-btn active" data-mode="cw" title="Rotate 90° CW + Split">↻CW</button>
+                            <button class="mode-btn ccw" data-mode="ccw" title="Rotate 90° CCW + Split">↺CCW</button>
+                            <button class="mode-btn vertical${dimensions.width <= 480 ? ' disabled' : ''}" data-mode="vertical" title="${dimensions.width <= 480 ? 'Width ≤480px - nothing to split' : 'Split Vertical (no rotation)'}">┃┃</button>
+                        </div>`}
                     `;
-                    thumb.onclick = () => toggleImageSelection(path);
+                    thumb.onclick = (e) => {
+                        if (fitsInScreen) return; // Locked - no action
+                        // Don't toggle selection if clicking a mode button
+                        if (e.target.classList.contains('mode-btn')) {
+                            e.stopPropagation();
+                            if (!e.target.classList.contains('disabled')) {
+                                setImageMode(path, e.target.dataset.mode);
+                            }
+                        } else {
+                            toggleImageSelection(path);
+                        }
+                    };
                     imageGrid.appendChild(thumb);
                 } catch (e) {
                     console.warn('Failed to load thumbnail:', path, e);
@@ -719,10 +894,13 @@
         // Image picker action buttons
         selectLandscapeBtn.onclick = () => {
             for (const [path, meta] of Object.entries(imageMetadata)) {
-                if (meta.width > meta.height) {
-                    selectedForSplit.add(path);
+                if (meta.width > meta.height && canBeSelected(path)) {
+                    selectedForSplit.set(path, 'cw');
                     const thumb = document.querySelector(`.image-thumb[data-path="${CSS.escape(path)}"]`);
-                    if (thumb) thumb.classList.add('selected');
+                    if (thumb) {
+                        thumb.classList.add('selected');
+                        updateModeButtons(thumb, path);
+                    }
                 }
             }
             updatePickerCount();
@@ -730,9 +908,14 @@
         
         selectAllBtn.onclick = () => {
             for (const path of Object.keys(imageMetadata)) {
-                selectedForSplit.add(path);
-                const thumb = document.querySelector(`.image-thumb[data-path="${CSS.escape(path)}"]`);
-                if (thumb) thumb.classList.add('selected');
+                if (canBeSelected(path)) {
+                    selectedForSplit.set(path, 'cw');
+                    const thumb = document.querySelector(`.image-thumb[data-path="${CSS.escape(path)}"]`);
+                    if (thumb) {
+                        thumb.classList.add('selected');
+                        updateModeButtons(thumb, path);
+                    }
+                }
             }
             updatePickerCount();
         };
@@ -791,11 +974,15 @@
             logContainer.scrollTop = logContainer.scrollHeight;
         }
         
-        function logImage(name, origW, origH, origFormat, origSize, newW, newH, newSize, wasSplit = false, splitCount = 0, partsInfo = null) {
+        function logImage(name, origW, origH, origFormat, origSize, newW, newH, newSize, wasSplit = false, splitCount = 0, partsInfo = null, mode = null) {
             const saved = origSize - newSize;
             const savedPct = ((saved / origSize) * 100).toFixed(0);
             const dims = `${origW}×${origH}`;
             const newDims = `${newW}×${newH}`;
+            
+            // Mode labels for logging
+            const modeLabels = { 'cw': '↻CW', 'ccw': '↺CCW', 'vertical': '┃V' };
+            const modeLabel = mode ? ` [${modeLabels[mode] || mode}]` : '';
             
             if (wasSplit) {
                 conversionStats.splits++;
@@ -808,8 +995,8 @@
                             `${p.name} (${p.width}×${p.height}, ${formatBytes(p.size)})`
                         ).join(', ');
                     }
-                    const savedInfo = saved > 0 ? `, <span style="color:#4ade80">-${savedPct}%</span>` : '';
-                    log(`<strong>${name}</strong> <span class="log-detail">(${dims} ${origFormat.toUpperCase()}, ${formatBytes(origSize)}) → ${splitCount} parts${savedInfo}</span>`, '', 'SPLIT');
+                    const savedInfo = saved > 0 ? `, <span class="log-saved">-${savedPct}%</span>` : '';
+                    log(`<strong>${name}</strong>${modeLabel} <span class="log-detail">(${dims} ${origFormat.toUpperCase()}, ${formatBytes(origSize)}) → ${splitCount} parts${savedInfo}</span>`, '', 'SPLIT');
                     if (partsDetail) {
                         log(`<span class="log-detail" style="margin-left: 20px;">↳ ${partsDetail}</span>`, '', '');
                     }
@@ -818,7 +1005,7 @@
                 conversionStats.images++;
                 if (advancedMode) {
                     const detail = saved > 0 
-                        ? `<span class="log-detail">(${dims} → ${newDims}, ${formatBytes(origSize)} → ${formatBytes(newSize)}, <span style="color:#4ade80">-${savedPct}%</span>)</span>`
+                        ? `<span class="log-detail">(${dims} → ${newDims}, ${formatBytes(origSize)} → ${formatBytes(newSize)}, <span class="log-saved">-${savedPct}%</span>)</span>`
                         : `<span class="log-detail">(${dims} → ${newDims}, ${formatBytes(newSize)})</span>`;
                     log(`<strong>${name}</strong> ${detail}`, '', 'CONVERT');
                 }
@@ -855,7 +1042,7 @@
                         <tr><td>Images processed</td><td class="highlight">${totalImages}${conversionStats.splits > 0 ? ` (${conversionStats.splits} split → ${conversionStats.splitParts} parts)` : ''}</td></tr>
                         <tr><td>Output images</td><td>${totalOutput}</td></tr>
                         <tr><td>EPUB repairs</td><td>${conversionStats.fixes > 0 ? conversionStats.fixes + ' fixes applied' : 'None needed'}</td></tr>
-                        ${conversionStats.errors > 0 ? `<tr><td>Errors</td><td style="color:#f87171">${conversionStats.errors}</td></tr>` : ''}
+                        ${conversionStats.errors > 0 ? `<tr><td>Errors</td><td class="log-error">${conversionStats.errors}</td></tr>` : ''}
                         <tr><td>Original size</td><td>${formatBytes(originalSize)}</td></tr>
                         <tr><td>New size</td><td>${formatBytes(newSize)}</td></tr>
                         <tr><td>Saved</td><td class="${saved > 0 ? 'saved' : 'increased'}">${saved > 0 ? formatBytes(saved) + ' (' + savedPct + '%)' : '+' + formatBytes(-saved)}</td></tr>
@@ -1067,7 +1254,7 @@
 
         const MAX_WIDTH = 480;
         const MAX_HEIGHT = 800;
-        const OVERLAP = 0.15; // 15% overlap
+        // OVERLAP is now dynamic based on mode (rotateOverlap or verticalOverlap)
 
         function applyGrayscale(ctx, width, height) {
             if (!enableGrayscale) return;
@@ -1092,17 +1279,17 @@
                     URL.revokeObjectURL(url);
                     const origW = img.width, origH = img.height;
                     const origSize = data.byteLength;
-                    const origFormat = 'image'; // Will be refined by caller based on extension
                     
-                    // Check if this image is selected for Rotate & Split (manual selection)
-                    const applyRotateSplit = selectedForSplit.has(imagePath);
+                    // Check if this image is selected and get its mode
+                    const imageMode = selectedForSplit.get(imagePath); // 'cw', 'ccw', 'vertical', or undefined
                     
-                    if (applyRotateSplit) {
-                        // LIGHT NOVEL MODE: Rotate 90° CW and split if needed
-                        //
+                    if (imageMode === 'cw' || imageMode === 'ccw') {
+                        // ROTATE + SPLIT MODE
                         // Step 1: Scale WIDTH to 800px (keep aspect ratio)
-                        // Step 2: Rotate 90° clockwise  
-                        // Step 3: If WIDTH > 480, split vertically with 15% overlap
+                        // Step 2: Rotate 90° CW or CCW
+                        // Step 3: If WIDTH > 480, split vertically with overlap
+                        
+                        const overlap = rotateOverlap / 100;
                         
                         // Step 1: Scale width to 800
                         const scale = MAX_HEIGHT / origW;  // 800 / origW
@@ -1119,8 +1306,7 @@
                         scaledCtx.fillRect(0, 0, scaledW, scaledH);
                         scaledCtx.drawImage(img, 0, 0, origW, origH, 0, 0, scaledW, scaledH);
                         
-                        // Step 2: Rotate 90° CW
-                        // After rotation: new width = scaledH, new height = scaledW (800)
+                        // Step 2: Rotate 90° CW or CCW
                         const rotW = scaledH;
                         const rotH = scaledW;  // 800
                         
@@ -1130,42 +1316,53 @@
                         const rotCtx = rotCanvas.getContext('2d');
                         rotCtx.fillStyle = '#FFF';
                         rotCtx.fillRect(0, 0, rotW, rotH);
-                        rotCtx.translate(rotW, 0);
-                        rotCtx.rotate(Math.PI / 2);
+                        
+                        if (imageMode === 'cw') {
+                            // Rotate 90° CW
+                            rotCtx.translate(rotW, 0);
+                            rotCtx.rotate(Math.PI / 2);
+                        } else {
+                            // Rotate 90° CCW
+                            rotCtx.translate(0, rotH);
+                            rotCtx.rotate(-Math.PI / 2);
+                        }
                         rotCtx.drawImage(scaledCanvas, 0, 0);
+                        rotCtx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
                         applyGrayscale(rotCtx, rotW, rotH);
                         
                         // Step 3: If WIDTH > 480, split vertically
                         if (rotW <= MAX_WIDTH) {
-                            // No split needed - width fits
                             const blob = await new Promise(res => rotCanvas.toBlob(res, 'image/jpeg', jpegQuality/100));
                             const arrBuf = await blob.arrayBuffer();
                             resolve({ 
                                 parts: [{ data: arrBuf, suffix: '', width: rotW, height: rotH }],
-                                meta: { origW, origH, origSize, wasSplit: false, rotated: true }
+                                meta: { origW, origH, origSize, wasSplit: false, rotated: true, mode: imageMode }
                             });
                         } else {
-                            // Split by WIDTH (vertical cuts) - from RIGHT to LEFT
-                            // After 90° CW rotation: right side becomes top, left becomes bottom
-                            // So we cut from right to left to get top-to-bottom order
+                            // Split by WIDTH (vertical cuts) - from RIGHT to LEFT for CW, LEFT to RIGHT for CCW
                             const parts = [];
                             const maxW = MAX_WIDTH;  // 480
-                            const overlapPx = Math.round(maxW * OVERLAP);  // ~72
-                            const step = maxW - overlapPx;  // ~408
+                            const overlapPx = Math.round(maxW * overlap);
+                            const step = maxW - overlapPx;
                             const numParts = Math.ceil((rotW - overlapPx) / step);
                             
                             for (let i = 0; i < numParts; i++) {
-                                // Start from right side (rotW) and go left
-                                let x = rotW - maxW - (i * step);
-                                if (i === numParts - 1) {
-                                    x = 0;  // Last part starts at left edge
+                                let x;
+                                if (imageMode === 'cw') {
+                                    // CW: right to left
+                                    x = rotW - maxW - (i * step);
+                                    if (i === numParts - 1) x = 0;
+                                } else {
+                                    // CCW: left to right
+                                    x = i * step;
+                                    if (i === numParts - 1) x = rotW - maxW;
                                 }
-                                x = Math.max(0, x);
+                                x = Math.max(0, Math.min(x, rotW - maxW));
                                 const partW = Math.min(maxW, rotW - x);
                                 
                                 const partCanvas = document.createElement('canvas');
                                 partCanvas.width = partW;
-                                partCanvas.height = rotH;  // 800
+                                partCanvas.height = rotH;
                                 const partCtx = partCanvas.getContext('2d');
                                 partCtx.drawImage(rotCanvas, x, 0, partW, rotH, 0, 0, partW, rotH);
                                 
@@ -1175,11 +1372,73 @@
                             }
                             resolve({ 
                                 parts,
-                                meta: { origW, origH, origSize, wasSplit: true, splitCount: numParts, rotated: true }
+                                meta: { origW, origH, origSize, wasSplit: true, splitCount: numParts, rotated: true, mode: imageMode }
+                            });
+                        }
+                    } else if (imageMode === 'vertical') {
+                        // VERTICAL SPLIT MODE (no rotation)
+                        // Split image vertically (left/right parts) with overlap
+                        
+                        const overlap = verticalOverlap / 100;
+                        
+                        // First scale to fit height
+                        let scaledW = origW, scaledH = origH;
+                        if (origH > MAX_HEIGHT) {
+                            const scale = MAX_HEIGHT / origH;
+                            scaledW = Math.round(origW * scale);
+                            scaledH = MAX_HEIGHT;
+                        }
+                        
+                        const scaledCanvas = document.createElement('canvas');
+                        scaledCanvas.width = scaledW;
+                        scaledCanvas.height = scaledH;
+                        const scaledCtx = scaledCanvas.getContext('2d');
+                        scaledCtx.imageSmoothingEnabled = true;
+                        scaledCtx.imageSmoothingQuality = 'high';
+                        scaledCtx.fillStyle = '#FFF';
+                        scaledCtx.fillRect(0, 0, scaledW, scaledH);
+                        scaledCtx.drawImage(img, 0, 0, origW, origH, 0, 0, scaledW, scaledH);
+                        applyGrayscale(scaledCtx, scaledW, scaledH);
+                        
+                        // Check if split needed
+                        if (scaledW <= MAX_WIDTH) {
+                            const blob = await new Promise(res => scaledCanvas.toBlob(res, 'image/jpeg', jpegQuality/100));
+                            const arrBuf = await blob.arrayBuffer();
+                            resolve({ 
+                                parts: [{ data: arrBuf, suffix: '', width: scaledW, height: scaledH }],
+                                meta: { origW, origH, origSize, wasSplit: false, rotated: false, mode: imageMode }
+                            });
+                        } else {
+                            // Split by WIDTH (vertical cuts) - LEFT to RIGHT (natural reading order)
+                            const parts = [];
+                            const maxW = MAX_WIDTH;
+                            const overlapPx = Math.round(maxW * overlap);
+                            const step = maxW - overlapPx;
+                            const numParts = Math.ceil((scaledW - overlapPx) / step);
+                            
+                            for (let i = 0; i < numParts; i++) {
+                                let x = i * step;
+                                if (i === numParts - 1) x = scaledW - maxW;
+                                x = Math.max(0, Math.min(x, scaledW - maxW));
+                                const partW = Math.min(maxW, scaledW - x);
+                                
+                                const partCanvas = document.createElement('canvas');
+                                partCanvas.width = partW;
+                                partCanvas.height = scaledH;
+                                const partCtx = partCanvas.getContext('2d');
+                                partCtx.drawImage(scaledCanvas, x, 0, partW, scaledH, 0, 0, partW, scaledH);
+                                
+                                const blob = await new Promise(res => partCanvas.toBlob(res, 'image/jpeg', jpegQuality/100));
+                                const arrBuf = await blob.arrayBuffer();
+                                parts.push({ data: arrBuf, suffix: `_part${i + 1}`, width: partW, height: scaledH });
+                            }
+                            resolve({ 
+                                parts,
+                                meta: { origW, origH, origSize, wasSplit: true, splitCount: numParts, rotated: false, mode: imageMode }
                             });
                         }
                     } else {
-                        // NOT rotating - check if we need to scale at all
+                        // NOT selected - check if we need to scale at all
                         const fitsInScreen = origW <= MAX_WIDTH && origH <= MAX_HEIGHT;
                         
                         if (fitsInScreen) {
@@ -1461,7 +1720,15 @@
                     logSection.classList.add('visible');
                     clearLog();
                     log(`Batch conversion: <strong>${batchFiles.length} files</strong>`, '', 'INFO');
-                    log(`Quality: ${jpegQuality}% | Rotate & Split: ${selectedForSplit.size} images | Grayscale: ${enableGrayscale ? 'ON' : 'OFF'}`, '', 'INFO');
+                    const cwCount = [...selectedForSplit.values()].filter(m => m === 'cw').length;
+                    const ccwCount = [...selectedForSplit.values()].filter(m => m === 'ccw').length;
+                    const vertCount = [...selectedForSplit.values()].filter(m => m === 'vertical').length;
+                    let modeInfo = [];
+                    if (cwCount) modeInfo.push(`${cwCount}×↻CW`);
+                    if (ccwCount) modeInfo.push(`${ccwCount}×↺CCW`);
+                    if (vertCount) modeInfo.push(`${vertCount}×┃V`);
+                    const modeStr = modeInfo.length ? modeInfo.join(', ') : 'none';
+                    log(`Quality: ${jpegQuality}% | Split: ${modeStr} | Rotate overlap: ${rotateOverlap}% | Vertical overlap: ${verticalOverlap}% | Grayscale: ${enableGrayscale ? 'ON' : 'OFF'}`, '', 'INFO');
                 }
                 
                 const results = [];
@@ -1492,7 +1759,7 @@
                         
                         if (advancedMode) {
                             if (savedBytes > 0) {
-                                log(`✓ ${file.name}: <span class="log-detail">${formatBytes(file.size)} → ${formatBytes(blob.size)} (<span style="color:#4ade80">-${savedPercent}%</span>)</span>`, 'success', 'DONE');
+                                log(`✓ ${file.name}: <span class="log-detail">${formatBytes(file.size)} → ${formatBytes(blob.size)} (<span class="log-saved">-${savedPercent}%</span>)</span>`, 'success', 'DONE');
                             } else {
                                 log(`✓ ${file.name}: <span class="log-detail">${formatBytes(file.size)} → ${formatBytes(blob.size)} (+${formatBytes(-savedBytes)})</span>`, 'warning', 'DONE');
                             }
@@ -1543,7 +1810,7 @@
                             <div class="log-summary-title">📊 Batch Summary</div>
                             <table class="log-summary-table">
                                 <tr><td>Files processed</td><td class="highlight">${successCount}/${results.length}</td></tr>
-                                ${failCount > 0 ? `<tr><td>Failed</td><td style="color:#f87171">${failCount}</td></tr>` : ''}
+                                ${failCount > 0 ? `<tr><td>Failed</td><td class="log-error">${failCount}</td></tr>` : ''}
                                 <tr><td>Total original size</td><td>${formatBytes(totalOriginalSize)}</td></tr>
                                 <tr><td>Total new size</td><td>${formatBytes(totalNewSize)}</td></tr>
                                 <tr><td>Total saved</td><td class="${totalSaved > 0 ? 'saved' : 'increased'}">${totalSaved > 0 ? formatBytes(totalSaved) + ' (' + totalSavedPercent + '%)' : '+' + formatBytes(-totalSaved)}</td></tr>
@@ -1584,8 +1851,16 @@
         async function processSingleFile() {
             const zip = currentZip;
             if (advancedMode) {
-                log(`<strong>${currentFile.name}</strong> <span class="log-detail">(${formatBytes(currentFile.size)})</span>`, '', 'INFO'); 
-                log(`Quality: ${jpegQuality}% | Rotate & Split: ${selectedForSplit.size} images | Grayscale: ${enableGrayscale ? 'ON' : 'OFF'}`, '', 'INFO');
+                log(`<strong>${currentFile.name}</strong> <span class="log-detail">(${formatBytes(currentFile.size)})</span>`, '', 'INFO');
+                const cwCount = [...selectedForSplit.values()].filter(m => m === 'cw').length;
+                const ccwCount = [...selectedForSplit.values()].filter(m => m === 'ccw').length;
+                const vertCount = [...selectedForSplit.values()].filter(m => m === 'vertical').length;
+                let modeInfo = [];
+                if (cwCount) modeInfo.push(`${cwCount}×↻CW`);
+                if (ccwCount) modeInfo.push(`${ccwCount}×↺CCW`);
+                if (vertCount) modeInfo.push(`${vertCount}×┃V`);
+                const modeStr = modeInfo.length ? modeInfo.join(', ') : 'none';
+                log(`Quality: ${jpegQuality}% | Split: ${modeStr} | Rotate overlap: ${rotateOverlap}% | Vertical overlap: ${verticalOverlap}% | Grayscale: ${enableGrayscale ? 'ON' : 'OFF'}`, '', 'INFO');
             }
             
             const renamed = {};
@@ -1662,7 +1937,7 @@
                         }
                         
                         // Log split image with details about each part
-                        logImage(fileName, meta.origW, meta.origH, origFormat, meta.origSize, 0, 0, totalNewSize, true, parts.length, partsInfo);
+                        logImage(fileName, meta.origW, meta.origH, origFormat, meta.origSize, 0, 0, totalNewSize, true, parts.length, partsInfo, meta.mode);
                     }
                 } else if (low.match(/\.(xhtml|html|htm)$/)) {
                     xhtmlFiles[path] = await file.async('string');
